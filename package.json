@@ -1,0 +1,17 @@
+{
+  "name": "english-practice-everyday-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env --import tsx src/bot.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "grammy": "^1.38.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
