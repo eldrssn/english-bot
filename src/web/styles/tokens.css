@@ -1,0 +1,82 @@
+/* Единственное место с цветами кабинета. Тема следует системной настройке. */
+:root {
+  color-scheme: light dark;
+
+  --color-bg: #f5f6f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef1f1;
+  --color-text: #1b2225;
+  --color-text-muted: #525f66;
+  --color-border: #d7dcde;
+  --color-border-strong: #7f8c92;
+
+  --color-accent: #1f5f70;
+  --color-accent-hover: #174b59;
+  --color-on-accent: #ffffff;
+  --color-link: #1a5868;
+  --color-focus: #0b6fb8;
+
+  --color-danger: #a4261b;
+  --color-danger-hover: #861c13;
+  --color-on-danger: #ffffff;
+  --color-danger-surface: #fbeeec;
+  --color-danger-border: #e7b9b4;
+
+  --color-warn: #6f4700;
+  --color-warn-surface: #fcf3dc;
+  --color-warn-border: #e6cf96;
+
+  --color-success: #1a5f33;
+  --color-success-surface: #e6f4ea;
+  --color-success-border: #b3dabf;
+
+  --color-backdrop: rgb(20 26 28 / 0.5);
+
+  /* Предпросмотр сообщений бота: фон чата, пузырь и кнопки под ним. */
+  --color-chat-bg: #dfe7ea;
+  --color-chat-bubble: #ffffff;
+  --color-chat-button: #c9d6db;
+
+  --radius: 8px;
+  --radius-small: 6px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #13181a;
+    --color-surface: #1b2225;
+    --color-surface-muted: #262e32;
+    --color-text: #e8edef;
+    --color-text-muted: #a8b4b9;
+    --color-border: #354045;
+    --color-border-strong: #7b8a91;
+
+    --color-accent: #80c7d9;
+    --color-accent-hover: #9dd6e4;
+    --color-on-accent: #0c1f24;
+    --color-link: #8fd0e0;
+    --color-focus: #6db9f2;
+
+    --color-danger: #f0928a;
+    --color-danger-hover: #f5aca6;
+    --color-on-danger: #2b0a07;
+    --color-danger-surface: #36191a;
+    --color-danger-border: #6e3431;
+
+    --color-warn: #edc36f;
+    --color-warn-surface: #312710;
+    --color-warn-border: #5f4c1d;
+
+    --color-success: #86d6a0;
+    --color-success-surface: #17301f;
+    --color-success-border: #2f5a3c;
+
+    --color-backdrop: rgb(0 0 0 / 0.6);
+
+    --color-chat-bg: #0e1416;
+    --color-chat-bubble: #222b2f;
+    --color-chat-button: #2f3b40;
+  }
+}

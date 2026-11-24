@@ -1,0 +1,114 @@
+{
+  "title": "Базовые слова",
+  "cards": [
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": "I have breakfast at eight. — Я завтракаю в восемь.",
+      "explanation": null
+    },
+    {
+      "english": "lunch",
+      "translation": "обед",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "dinner",
+      "translation": "ужин",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "acceptedRuEn": [
+        "quick"
+      ],
+      "acceptedEnRu": [
+        "скорый"
+      ],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "bank",
+      "translation": "банк",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": "The bank is closed. — Банк закрыт.",
+      "explanation": null
+    },
+    {
+      "english": "light",
+      "translation": "свет",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": "Turn on the light. — Включи свет.",
+      "explanation": null
+    },
+    {
+      "english": "green",
+      "translation": "зелёный",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "Christmas tree",
+      "translation": "ёлка",
+      "acceptedRuEn": [
+        "fir tree"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "all",
+      "translation": "всё",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "by the way",
+      "translation": "кстати",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "между прочим"
+      ],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "thank you",
+      "translation": "спасибо",
+      "acceptedRuEn": [
+        "thanks"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    }
+  ]
+}

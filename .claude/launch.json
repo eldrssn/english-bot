@@ -1,0 +1,46 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bot",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "npm run dev"
+      ],
+      "port": 3000,
+      "autoPort": false,
+      "url": "http://127.0.0.1:3000"
+    },
+    {
+      "name": "cabinet-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:api"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000"
+    },
+    {
+      "name": "cabinet-vite",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:web"
+      ],
+      "port": 5173,
+      "url": "http://127.0.0.1:5173"
+    },
+    {
+      "name": "cabinet-api-stage4",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "PORT=3210 DATABASE_URL=postgres://english_bot@127.0.0.1:54329/english_bot_dev DEV_LOGIN_TELEGRAM_ID=910000777 WEB_DIST_DIR=dist/web npm run dev:api"
+      ],
+      "port": 3210,
+      "url": "http://127.0.0.1:3210"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Альтернатива scripts/pg-local.sh: тот же порт, пользователь и базы.
+# Запуск: docker compose up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: english_bot
+      POSTGRES_DB: english_bot_dev
+      # Только для разработки: порт открыт лишь на 127.0.0.1.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/docker-init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U english_bot -d english_bot_dev"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

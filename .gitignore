@@ -1,2 +1,11 @@
 node_modules/
+dist/
+coverage/
+
+# Секреты и локальные настройки. Шаблон — .env.example.
 .env
+.env.*
+!.env.example
+
+# Локальный кластер PostgreSQL (scripts/pg-local.sh)
+.pgdata/

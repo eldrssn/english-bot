@@ -1,0 +1,1275 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 16px/1.5 var(--font);
+}
+
+h1,
+h2,
+p,
+ul,
+dl,
+dd {
+  margin: 0;
+}
+
+h2 {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+a {
+  color: var(--color-link);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Заголовок получает фокус программно: рамка на нём только отвлекала бы. */
+.page-title:focus,
+.page-title:focus-visible {
+  outline: none;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.small {
+  font-size: 14px;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+/* ---------- Каркас ---------- */
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 10;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-small);
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+.app-header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+}
+
+.brand {
+  font-weight: 650;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.app-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.app-nav a {
+  padding: 6px 10px;
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.app-nav a:hover {
+  background: var(--color-surface-muted);
+}
+
+.app-nav a[aria-current="page"] {
+  background: var(--color-surface-muted);
+  font-weight: 600;
+}
+
+.app-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-user-name {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page > * {
+  min-width: 0;
+}
+
+/*
+ * Пустая область сообщений остаётся в дереве доступности, но не занимает места: живая область должна
+ * существовать до того, как в ней появится текст, иначе программа чтения с экрана может его не объявить.
+ */
+.flash-region:empty,
+.sr-status:empty,
+.form-status:empty,
+.paste-result:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-title {
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumb {
+  font-size: 14px;
+  margin-bottom: -8px;
+}
+
+.center-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.center-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- Кнопки ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 550;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-small {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 14px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-on-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+}
+
+.btn-danger-outline {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.btn-danger-outline:hover:not(:disabled) {
+  background: var(--color-danger-surface);
+}
+
+.btn-dev {
+  border: 2px dashed var(--color-warn);
+  background: var(--color-warn-surface);
+  color: var(--color-warn);
+}
+
+.btn-dev:hover:not(:disabled) {
+  background: var(--color-warn-surface);
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- Сообщения и состояния ---------- */
+
+.notice {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notice-danger {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+  color: var(--color-text);
+}
+
+.notice-warn {
+  background: var(--color-warn-surface);
+  border-color: var(--color-warn-border);
+  color: var(--color-text);
+}
+
+.notice-success {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+  color: var(--color-text);
+}
+
+.state-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+.empty {
+  padding: 24px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--color-surface);
+}
+
+.empty-title {
+  font-weight: 650;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 550;
+}
+
+.badge-neutral {
+  background: var(--color-surface-muted);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.badge-warn {
+  background: var(--color-warn-surface);
+  border-color: var(--color-warn-border);
+  color: var(--color-warn);
+}
+
+.badge-success {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+  color: var(--color-success);
+}
+
+/* ---------- Панели и данные ---------- */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.section > .btn {
+  align-self: flex-start;
+}
+
+.panel {
+  padding: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.panel-attention {
+  border-color: var(--color-warn-border);
+  background: var(--color-warn-surface);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.stat {
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.stat dt {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.stat dd {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.request-list,
+.collection-list {
+  list-style: none;
+  padding: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.request-row,
+.collection-row {
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.request-row + .request-row,
+.collection-row + .collection-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.request-row-main {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.collection-row .strong {
+  flex: 1 1 200px;
+  overflow-wrap: anywhere;
+}
+
+.telegram-identity {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 20px;
+}
+
+.facts dt {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.facts dd {
+  overflow-wrap: anywhere;
+}
+
+.card-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- Таблица учеников ---------- */
+
+.students,
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 15px;
+}
+
+.students th,
+.data-table th {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.students td,
+.data-table td {
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.students-name a {
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .students,
+  .students tbody,
+  .students tr,
+  .students td,
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .students thead,
+  .data-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .students tbody tr,
+  .data-table tbody tr {
+    padding: 10px 12px;
+  }
+
+  .students tbody tr + tr,
+  .data-table tbody tr + tr {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .students td,
+  .data-table td {
+    padding: 2px 0;
+    border: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+  }
+
+  .students td::before,
+  .data-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  .students td.students-name::before,
+  .data-table td.data-table-main::before,
+  .data-table td.row-actions-cell::before {
+    display: none;
+  }
+
+  .students td.students-name,
+  .data-table td.data-table-main {
+    font-size: 16px;
+  }
+}
+
+/* ---------- Формы ---------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field-hint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.field-error {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--color-danger);
+}
+
+.input {
+  width: 100%;
+  max-width: 420px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.input:disabled {
+  background: var(--color-surface-muted);
+  cursor: not-allowed;
+}
+
+.code-field .input {
+  max-width: 180px;
+  font: 20px/1.3 var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+.rename-form {
+  flex: 1 1 100%;
+  padding: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* ---------- Ссылка, ID, копирование ---------- */
+
+.link-value {
+  padding: 10px 12px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  font: 14px/1.45 var(--font-mono);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.copy-result {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.id-box {
+  padding: 10px 12px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-small);
+  display: flex;
+  flex-direction: column;
+}
+
+.id-box-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.id-box-value {
+  font: 20px/1.3 var(--font-mono);
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+.dev-login {
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* ---------- Диалог ---------- */
+
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background: var(--color-backdrop);
+}
+
+.dialog-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.dialog-body ul {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dialog .field-error {
+  margin-top: 12px;
+}
+
+.dialog-actions {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* ---------- Телефон ---------- */
+
+@media (pointer: coarse), (max-width: 480px) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn-small {
+    min-height: 38px;
+  }
+
+  /* 16px в поле: iOS Safari не увеличивает страницу при фокусе. */
+  .input {
+    max-width: none;
+  }
+
+  .actions .btn,
+  .section > .btn,
+  .page-head .btn {
+    flex: 1 1 auto;
+  }
+
+  .section > .btn {
+    align-self: stretch;
+  }
+
+  .app-user {
+    margin-left: 0;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .page-title {
+    font-size: 21px;
+  }
+
+  .stat:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- Подборки и карточки ---------- */
+
+.data-table td.data-table-main {
+  font-weight: 600;
+}
+
+.data-table-main a {
+  font-weight: 600;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table th.numeric,
+.data-table td.card-number {
+  width: 3em;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.block {
+  display: block;
+}
+
+.section-heading {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+.section-heading:focus {
+  outline: none;
+}
+
+.section-heading:focus-visible {
+  outline: 2px solid var(--color-focus);
+}
+
+/* Короткие сообщения о результате действия для чтения с экрана и для глаз. */
+.sr-status,
+.form-status {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.form-status {
+  color: var(--color-success);
+  font-weight: 550;
+}
+
+.paste-result:focus {
+  outline: none;
+}
+
+.toolbar {
+  align-items: center;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.btn-icon {
+  min-width: 34px;
+  padding: 4px 8px;
+}
+
+.card-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.badge-danger {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+}
+
+.badge-inline {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+.inline-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+@media (min-width: 721px) {
+  .cards-table .row-actions-cell {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  .cards-table .row-actions {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .data-table td.card-number {
+    width: auto;
+  }
+
+  .data-table td.row-actions-cell {
+    padding-top: 6px;
+  }
+}
+
+.added-list {
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---------- Форма карточки ---------- */
+
+.textarea {
+  max-width: none;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.card-form .input {
+  max-width: none;
+}
+
+.card-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  align-items: start;
+}
+
+.card-form-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .card-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.checkbox-line label {
+  font-weight: 600;
+}
+
+.checkbox {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--color-accent);
+}
+
+.checkbox[aria-invalid="true"] {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 1px;
+}
+
+/* ---------- Предпросмотр глазами ученика ---------- */
+
+.preview {
+  padding: 16px;
+  background: var(--color-chat-bg);
+  border-radius: var(--radius);
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.preview-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.tg-message {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tg-text,
+.tg-message > .tg-text {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--color-chat-bubble);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.tg-buttons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tg-row {
+  display: flex;
+  gap: 4px;
+}
+
+.tg-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--color-chat-button);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.accepted-facts dd {
+  font-size: 15px;
+}
+
+/* ---------- Импорт ---------- */
+
+.paste {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.import-help summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.import-help[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.import-help[open] summary {
+  margin-bottom: 2px;
+}
+
+.column-list {
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.column-list .badge {
+  margin-left: 8px;
+}
+
+.example-block {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  font: 13px/1.5 var(--font-mono);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.paste-area {
+  font: 14px/1.45 var(--font-mono);
+  min-height: 160px;
+}
+
+.file-input {
+  max-width: 100%;
+  font: inherit;
+  font-size: 15px;
+}
+
+.import-stats .stat dd {
+  font-size: 22px;
+}
+
+.stat-success dd {
+  color: var(--color-success);
+}
+
+.stat-danger dd {
+  color: var(--color-danger);
+}
+
+.stat-warn dd {
+  color: var(--color-warn);
+}
+
+.row-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.row-errors {
+  padding-left: 18px;
+  font-size: 14px;
+  flex: 1 1 200px;
+}
+
+.data-table tr.row-invalid td {
+  background: var(--color-danger-surface);
+}
+
+.data-table tr.row-duplicate td {
+  background: var(--color-warn-surface);
+}
+
+@media (max-width: 720px) {
+  .data-table tr.row-invalid,
+  .data-table tr.row-duplicate {
+    border-left: 4px solid var(--color-danger);
+  }
+
+  .data-table tr.row-duplicate {
+    border-left-color: var(--color-warn);
+  }
+
+  .data-table tr.row-invalid td,
+  .data-table tr.row-duplicate td {
+    background: none;
+  }
+}
+
+/* ---------- Выдача ---------- */
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.fieldset legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.select-all {
+  align-self: flex-start;
+}
+
+.choice-list {
+  list-style: none;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+.choice-list li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.choice-name {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.recipient-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recipient {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.recipient-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  overflow-wrap: anywhere;
+}
+
+.message-preview {
+  margin: 0;
+  padding: 10px;
+  background: var(--color-chat-bg);
+  border-radius: var(--radius-small);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---------- Копия ученика ---------- */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-self: flex-start;
+}
+
+.segmented .btn[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.notice > blockquote {
+  align-self: stretch;
+}
+
+.import-table td {
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 721px) {
+  .import-table th:nth-child(2),
+  .import-table th:nth-child(3) {
+    width: 22%;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Номер в карточке на телефоне не нужен: порядок виден по списку. */
+  .cards-table td.card-number {
+    display: none;
+  }
+}

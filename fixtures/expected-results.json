@@ -1,0 +1,618 @@
+{
+  "answers": [
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "en_ru",
+      "input": "завтрак",
+      "expected": true,
+      "note": "основной перевод"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "en_ru",
+      "input": "  ЗАВТРАК  ",
+      "expected": true,
+      "note": "регистр и лишние пробелы"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "ru_en",
+      "input": "Breakfast.",
+      "expected": true,
+      "note": "регистр и точка"
+    },
+    {
+      "english": "by the way",
+      "translation": "кстати",
+      "direction": "ru_en",
+      "input": "by   the  way",
+      "expected": true,
+      "note": "лишние пробелы внутри фразы"
+    },
+    {
+      "english": "by the way",
+      "translation": "кстати",
+      "direction": "ru_en",
+      "input": "By the way!",
+      "expected": true,
+      "note": "пунктуация во фразе"
+    },
+    {
+      "english": "by the way",
+      "translation": "кстати",
+      "direction": "ru_en",
+      "input": "by-the-way",
+      "expected": true,
+      "note": "дефис считается пробелом"
+    },
+    {
+      "english": "by the way",
+      "translation": "кстати",
+      "direction": "en_ru",
+      "input": "между прочим",
+      "expected": true,
+      "note": "допустимый синоним фразы"
+    },
+    {
+      "english": "How much is it?",
+      "translation": "Сколько это стоит?",
+      "direction": "ru_en",
+      "input": "how much is it",
+      "expected": true,
+      "note": "вопросительный знак можно не писать"
+    },
+    {
+      "english": "How much is it?",
+      "translation": "Сколько это стоит?",
+      "direction": "en_ru",
+      "input": "сколько это стоит",
+      "expected": true,
+      "note": "пунктуация в русском ответе"
+    },
+    {
+      "english": "How much is it?",
+      "translation": "Сколько это стоит?",
+      "direction": "ru_en",
+      "input": "How much does it cost?",
+      "expected": true,
+      "note": "допустимая фраза"
+    },
+    {
+      "english": "How much is it?",
+      "translation": "Сколько это стоит?",
+      "direction": "ru_en",
+      "input": "how much",
+      "expected": false,
+      "note": "часть фразы не засчитывается"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "ru_en",
+      "input": "don’t worry",
+      "expected": true,
+      "note": "типографский апостроф"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "ru_en",
+      "input": "dont worry",
+      "expected": true,
+      "note": "апостроф относится к пунктуации"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "ru_en",
+      "input": "do not worry",
+      "expected": true,
+      "note": "допустимая полная форма"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "ru_en",
+      "input": "worry",
+      "expected": false,
+      "note": "потеряно отрицание"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "en_ru",
+      "input": "волнуйся",
+      "expected": false,
+      "note": "потеряно отрицание"
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "direction": "en_ru",
+      "input": "не волнуйтесь",
+      "expected": true,
+      "note": "вариант только для en_ru"
+    },
+    {
+      "english": "green",
+      "translation": "зелёный",
+      "direction": "en_ru",
+      "input": "зеленый",
+      "expected": true,
+      "note": "е вместо ё в ответе"
+    },
+    {
+      "english": "green",
+      "translation": "зелёный",
+      "direction": "en_ru",
+      "input": "ЗЕЛЁНЫЙ",
+      "expected": true,
+      "note": "заглавная Ё"
+    },
+    {
+      "english": "Christmas tree",
+      "translation": "ёлка",
+      "direction": "en_ru",
+      "input": "елка",
+      "expected": true,
+      "note": "е вместо ё в первой букве"
+    },
+    {
+      "english": "Christmas tree",
+      "translation": "ёлка",
+      "direction": "ru_en",
+      "input": "fir tree",
+      "expected": true,
+      "note": "синоним ru_en"
+    },
+    {
+      "english": "Christmas tree",
+      "translation": "ёлка",
+      "direction": "en_ru",
+      "input": "fir tree",
+      "expected": false,
+      "note": "английский вариант не подходит для en_ru"
+    },
+    {
+      "english": "all",
+      "translation": "всё",
+      "direction": "en_ru",
+      "input": "все",
+      "expected": true,
+      "note": "ё = е, даже если получается другое слово"
+    },
+    {
+      "english": "once more",
+      "translation": "ещё раз",
+      "direction": "en_ru",
+      "input": "еще раз",
+      "expected": true,
+      "note": "е вместо ё во фразе"
+    },
+    {
+      "english": "light",
+      "translation": "лёгкий",
+      "direction": "en_ru",
+      "input": "легкий",
+      "expected": true,
+      "note": "е вместо ё"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "ru_en",
+      "input": "breakfest",
+      "expected": false,
+      "note": "опечатка: допуска нет"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "en_ru",
+      "input": "быстрй",
+      "expected": false,
+      "note": "опечатка: допуска нет"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "ru_en",
+      "input": "past",
+      "expected": false,
+      "note": "похоже по буквам, другой смысл"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "en_ru",
+      "input": "обед",
+      "expected": false,
+      "note": "другое слово"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "en_ru",
+      "input": "",
+      "expected": false,
+      "note": "пустой ответ"
+    },
+    {
+      "english": "breakfast",
+      "translation": "завтрак",
+      "direction": "en_ru",
+      "input": "?!",
+      "expected": false,
+      "note": "только пунктуация"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "ru_en",
+      "input": "fast",
+      "expected": true,
+      "note": "основной текст"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "ru_en",
+      "input": "quick",
+      "expected": true,
+      "note": "вариант первой подборки"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "ru_en",
+      "input": "rapid",
+      "expected": true,
+      "note": "вариант совпавшей карточки из другой подборки"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "en_ru",
+      "input": "скорый",
+      "expected": true,
+      "note": "синоним en_ru"
+    },
+    {
+      "english": "fast",
+      "translation": "быстрый",
+      "direction": "en_ru",
+      "input": "quick",
+      "expected": false,
+      "note": "английский вариант не подходит для en_ru"
+    },
+    {
+      "english": "bank",
+      "translation": "банк",
+      "direction": "en_ru",
+      "input": "банк",
+      "expected": true,
+      "note": "своё значение"
+    },
+    {
+      "english": "bank",
+      "translation": "банк",
+      "direction": "en_ru",
+      "input": "берег",
+      "expected": false,
+      "note": "значение другого слова bank"
+    },
+    {
+      "english": "bank",
+      "translation": "берег",
+      "direction": "en_ru",
+      "input": "берег",
+      "expected": true,
+      "note": "своё значение"
+    },
+    {
+      "english": "bank",
+      "translation": "берег",
+      "direction": "en_ru",
+      "input": "банк",
+      "expected": false,
+      "note": "значение другого слова bank"
+    },
+    {
+      "english": "bank",
+      "translation": "берег",
+      "direction": "ru_en",
+      "input": "shore",
+      "expected": true,
+      "note": "вариант только у bank — берег"
+    },
+    {
+      "english": "bank",
+      "translation": "банк",
+      "direction": "ru_en",
+      "input": "shore",
+      "expected": false,
+      "note": "вариант другого слова bank не подходит"
+    },
+    {
+      "english": "light",
+      "translation": "свет",
+      "direction": "en_ru",
+      "input": "лёгкий",
+      "expected": false,
+      "note": "значение другого слова light"
+    },
+    {
+      "english": "light",
+      "translation": "лёгкий",
+      "direction": "en_ru",
+      "input": "нетяжёлый",
+      "expected": true,
+      "note": "синоним с ё"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "ru_en",
+      "input": "to go",
+      "expected": true,
+      "note": "полная форма"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "ru_en",
+      "input": "go",
+      "expected": true,
+      "note": "пропуск to разрешён"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "ru_en",
+      "input": "To Go!",
+      "expected": true,
+      "note": "регистр и пунктуация вместе с to"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "ru_en",
+      "input": "to  go",
+      "expected": true,
+      "note": "лишний пробел после to"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "ru_en",
+      "input": "go to",
+      "expected": false,
+      "note": "убирается только начальный to"
+    },
+    {
+      "english": "to go",
+      "translation": "идти",
+      "direction": "en_ru",
+      "input": "ходить",
+      "expected": true,
+      "note": "синоним en_ru"
+    },
+    {
+      "english": "to be",
+      "translation": "быть",
+      "direction": "ru_en",
+      "input": "to be",
+      "expected": true,
+      "note": "полная форма"
+    },
+    {
+      "english": "to be",
+      "translation": "быть",
+      "direction": "ru_en",
+      "input": "be",
+      "expected": false,
+      "note": "пропуск to запрещён в карточке"
+    },
+    {
+      "english": "to look after",
+      "translation": "присматривать",
+      "direction": "ru_en",
+      "input": "look after",
+      "expected": false,
+      "note": "пропуск to запрещён в карточке"
+    },
+    {
+      "english": "to look after",
+      "translation": "присматривать",
+      "direction": "ru_en",
+      "input": "to take care of",
+      "expected": true,
+      "note": "допустимая фраза"
+    },
+    {
+      "english": "to look after",
+      "translation": "присматривать",
+      "direction": "ru_en",
+      "input": "take care of",
+      "expected": false,
+      "note": "пропуск to запрещён и для варианта"
+    },
+    {
+      "english": "to get up",
+      "translation": "вставать",
+      "direction": "ru_en",
+      "input": "get up",
+      "expected": true,
+      "note": "пропуск to во фразовом глаголе"
+    },
+    {
+      "english": "go to bed",
+      "translation": "ложиться спать",
+      "direction": "ru_en",
+      "input": "go to bed",
+      "expected": true,
+      "note": "фраза целиком"
+    },
+    {
+      "english": "go to bed",
+      "translation": "ложиться спать",
+      "direction": "ru_en",
+      "input": "go bed",
+      "expected": false,
+      "note": "убирается только начальный to"
+    },
+    {
+      "english": "used to",
+      "translation": "раньше делать",
+      "direction": "ru_en",
+      "input": "used to",
+      "expected": true,
+      "note": "to в конце"
+    },
+    {
+      "english": "used to",
+      "translation": "раньше делать",
+      "direction": "ru_en",
+      "input": "used",
+      "expected": false,
+      "note": "to в конце не убирается"
+    },
+    {
+      "english": "next to",
+      "translation": "рядом с",
+      "direction": "ru_en",
+      "input": "next",
+      "expected": false,
+      "note": "to в конце не убирается"
+    },
+    {
+      "english": "to book",
+      "translation": "бронировать",
+      "direction": "ru_en",
+      "input": "book",
+      "expected": true,
+      "note": "пропуск to разрешён"
+    },
+    {
+      "english": "to book",
+      "translation": "бронировать",
+      "direction": "en_ru",
+      "input": "to бронировать",
+      "expected": false,
+      "note": "to не убирается из русского ответа"
+    },
+    {
+      "english": "to leave",
+      "translation": "уезжать",
+      "direction": "ru_en",
+      "input": "leave",
+      "expected": true,
+      "note": "разрешено совпавшей карточкой из другой подборки"
+    },
+    {
+      "english": "to",
+      "translation": "к",
+      "direction": "ru_en",
+      "input": "to",
+      "expected": true,
+      "note": "само слово to не становится пустым"
+    },
+    {
+      "english": "to",
+      "translation": "к",
+      "direction": "ru_en",
+      "input": "",
+      "expected": false,
+      "note": "пустой ответ при разрешённом пропуске"
+    }
+  ],
+  "wordIdentity": [
+    {
+      "a": [
+        "fast",
+        "быстрый"
+      ],
+      "b": [
+        "  Fast ",
+        "Быстрый"
+      ],
+      "same": true,
+      "note": "регистр и пробелы"
+    },
+    {
+      "a": [
+        "Christmas tree",
+        "ёлка"
+      ],
+      "b": [
+        "christmas  tree",
+        "елка"
+      ],
+      "same": true,
+      "note": "ё = е и лишний пробел"
+    },
+    {
+      "a": [
+        "all",
+        "всё"
+      ],
+      "b": [
+        "all",
+        "все"
+      ],
+      "same": true,
+      "note": "ё = е, различие слов «всё» и «все» теряется"
+    },
+    {
+      "a": [
+        "bank",
+        "банк"
+      ],
+      "b": [
+        "bank",
+        "берег"
+      ],
+      "same": false,
+      "note": "разные значения: отдельные счётчики"
+    },
+    {
+      "a": [
+        "light",
+        "свет"
+      ],
+      "b": [
+        "light",
+        "лёгкий"
+      ],
+      "same": false,
+      "note": "разные значения"
+    },
+    {
+      "a": [
+        "to go",
+        "идти"
+      ],
+      "b": [
+        "go",
+        "идти"
+      ],
+      "same": false,
+      "note": "to важен для совпадения слов"
+    },
+    {
+      "a": [
+        "How much is it?",
+        "Сколько это стоит?"
+      ],
+      "b": [
+        "How much is it",
+        "Сколько это стоит"
+      ],
+      "same": false,
+      "note": "пунктуация не входит в правило совпадения слов"
+    }
+  ]
+}

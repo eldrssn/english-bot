@@ -1,0 +1,102 @@
+{
+  "title": "Глаголы и to",
+  "cards": [
+    {
+      "english": "to go",
+      "translation": "идти",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "ехать",
+        "ходить"
+      ],
+      "allowOmitTo": true,
+      "example": "I go to work by bus. — Я езжу на работу на автобусе.",
+      "explanation": null
+    },
+    {
+      "english": "to be",
+      "translation": "быть",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to have",
+      "translation": "иметь",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to get up",
+      "translation": "вставать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "подниматься"
+      ],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to look after",
+      "translation": "присматривать",
+      "acceptedRuEn": [
+        "to take care of"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "go to bed",
+      "translation": "ложиться спать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "used to",
+      "translation": "раньше делать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to do",
+      "translation": "делать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to leave",
+      "translation": "уезжать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": "Покидать место: I leave at six. — Я ухожу в шесть."
+    },
+    {
+      "english": "to",
+      "translation": "к",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": "Предлог направления: to school — в школу, to the park — к парку."
+    }
+  ]
+}

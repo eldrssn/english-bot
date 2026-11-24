@@ -1,0 +1,114 @@
+{
+  "title": "Путешествие",
+  "cards": [
+    {
+      "english": "  Fast ",
+      "translation": "Быстрый",
+      "acceptedRuEn": [
+        "rapid"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "bank",
+      "translation": "берег",
+      "acceptedRuEn": [
+        "shore"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": "We sat on the bank of the river. — Мы сидели на берегу реки.",
+      "explanation": "Берег реки, а не финансовая организация."
+    },
+    {
+      "english": "light",
+      "translation": "лёгкий",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "нетяжёлый"
+      ],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": "Лёгкий по весу."
+    },
+    {
+      "english": "ticket",
+      "translation": "билет",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to book",
+      "translation": "бронировать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "заказывать"
+      ],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "to leave",
+      "translation": "уезжать",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [
+        "уходить"
+      ],
+      "allowOmitTo": true,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "How much is it?",
+      "translation": "Сколько это стоит?",
+      "acceptedRuEn": [
+        "How much does it cost?"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "don't worry",
+      "translation": "не волнуйся",
+      "acceptedRuEn": [
+        "do not worry"
+      ],
+      "acceptedEnRu": [
+        "не волнуйтесь"
+      ],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "next to",
+      "translation": "рядом с",
+      "acceptedRuEn": [],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    },
+    {
+      "english": "once more",
+      "translation": "ещё раз",
+      "acceptedRuEn": [
+        "one more time",
+        "again"
+      ],
+      "acceptedEnRu": [],
+      "allowOmitTo": false,
+      "example": null,
+      "explanation": null
+    }
+  ]
+}

@@ -2,16 +2,56 @@
   "name": "english-practice-everyday-bot",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
   "scripts": {
-    "dev": "node --env-file=.env --import tsx src/bot.ts",
-    "typecheck": "tsc --noEmit"
+    "dev": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx src/main.ts",
+    "build:web": "vite build",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp -R src/db/migrations dist/src/db/migrations && npm run build:web",
+    "start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local dist/src/main.js",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/web/tsconfig.json",
+    "test": "vitest run",
+    "test:e2e": "vite build && node --import tsx e2e/prepare-db.ts && playwright test",
+    "dev:web": "vite",
+    "dev:api": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/dev-api.ts",
+    "dev:student": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/dev-student.ts",
+    "dev:issue-collection": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/dev-issue-collection.ts",
+    "dev:prepare-student": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/dev-prepare-student.ts",
+    "admin:set-teacher": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/admin-role.ts set-teacher",
+    "admin:remove-teacher": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/admin-role.ts remove-teacher",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/db-migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/db-seed.ts",
+    "db:local:start": "bash scripts/pg-local.sh start",
+    "db:local:stop": "bash scripts/pg-local.sh stop",
+    "db:local:status": "bash scripts/pg-local.sh status",
+    "db:local:psql": "bash scripts/pg-local.sh psql"
   },
   "dependencies": {
-    "grammy": "^1.38.2"
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/static": "^10.1.10",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.8",
+    "grammy": "^1.46.0",
+    "jose": "^6.2.15",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
   }
 }
