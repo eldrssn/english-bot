@@ -1,7 +1,10 @@
 // Только для разработки: готовит ученика к проверке со стороны бота.
 // Подключает Telegram-аккаунт к преподавателю тем же путём, что и настоящая привязка (ссылка, заявка, код),
 // заводит тестовые подборки как собственные подборки преподавателя для разработки (их можно править и выдавать
-// в кабинете), выдаёт их ученику обычной выдачей и по желанию сбрасывает прогресс, чтобы пройти обучение заново.
+// в кабинете), выдаёт их ученику обычной выдачей и по желанию сбрасывает прогресс, чтобы пройти обучение заново,
+// и отмечает несколько слов сложными, чтобы сразу проверить «Сложные слова» и правило «5 из 5».
+// По желанию задаёт часовой пояс и ставит время напоминания на текущую минуту: запущенный сервис
+// в течение минуты создаст сегодняшний квест и пришлёт напоминание с кнопкой «Начать».
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { setTeacherRole } from "../admin/roles.js";
 import type { Db } from "../db/client.js";
@@ -9,6 +12,7 @@ import type { FixtureCollection } from "../db/fixtures.js";
 import {
   attempts,
   cardViews,
+  notifications,
   questions,
   sessions,
   sourceCards,
@@ -19,7 +23,11 @@ import {
   studentWords,
   users,
 } from "../db/schema.js";
+import { formatClock, isValidTimeZone, localDate, localMinutes } from "../domain/learning/local-time.js";
+import { LEARNING_SETTINGS } from "../domain/learning/settings.js";
+import { dailyReminderKey } from "../notifications/reminders.js";
 import { issueFixtureCollection } from "../learning/issue.js";
+import { groupWords, listVisibleCards } from "../learning/vocabulary.js";
 import { createLinkingService } from "../linking/service.js";
 import { createIssueService } from "../materials/issue.js";
 
@@ -37,7 +45,25 @@ export type PrepareStudentInput = {
   fixtures: FixtureCollection[];
   /** Удалить занятия, ответы и просмотры ученика и вернуть слова в начальное состояние. */
   resetProgress?: boolean;
+  /**
+   * Отметить столько слов сложными (после сброса, если он запрошен). У первого серия 4 из 5:
+   * один верный ответ с первой попытки в новом занятии его освоит.
+   */
+  hardWords?: number;
+  /** Часовой пояс IANA для ученика. */
+  timezone?: string;
+  /**
+   * Подготовить напоминание прямо сейчас: включить напоминания, поставить время на текущую минуту по поясу ученика
+   * (без пояса — DEV_DEFAULT_TIMEZONE), снять отметку о блокировке и удалить сегодняшнее напоминание из очереди,
+   * чтобы планировщик отправил его снова. Сам квест создаёт планировщик запущенного сервиса.
+   */
+  remindNow?: boolean;
+  /** Часы для remindNow. В тестах подменяются. */
+  now?: Date;
 };
+
+/** Пояс для --remind, если ученик его ещё не выбрал. */
+export const DEV_DEFAULT_TIMEZONE = "Europe/Moscow";
 
 export type PrepareStudentResult = {
   linkId: number;
@@ -55,6 +81,12 @@ export type PrepareStudentResult = {
   teacherCollections: { title: string; id: number; created: boolean }[];
   /** Сколько занятий удалено при сбросе. null: сброс не запрашивался. */
   resetSessions: number | null;
+  /** Слова, отмеченные сложными, с серией. Пусто: не запрашивалось. */
+  hardWords: { english: string; translation: string; correctStreak: number }[];
+  /** Часовой пояс ученика после команды. */
+  timezone: string | null;
+  /** Подготовленное напоминание. null: не запрашивалось. */
+  reminder: { reminderTime: string; localDate: string; questCompletedToday: boolean } | null;
 };
 
 export async function prepareDevStudent(db: Db, input: PrepareStudentInput): Promise<PrepareStudentResult> {
@@ -62,6 +94,9 @@ export async function prepareDevStudent(db: Db, input: PrepareStudentInput): Pro
     throw new PrepareStudentError("Аккаунт ученика совпадает с преподавателем: один аккаунт имеет одну роль");
   }
   if (input.fixtures.length === 0) throw new PrepareStudentError("Нет тестовых подборок в папке fixtures");
+  if (input.timezone !== undefined && !isValidTimeZone(input.timezone)) {
+    throw new PrepareStudentError(`Часовой пояс ${input.timezone} не распознан: нужно имя IANA, например Europe/Moscow`);
+  }
 
   const teacherRole = await setTeacherRole(db, { telegramId: input.teacherTelegramId, actor: "dev:prepare-student" });
   if (teacherRole.kind === "student_has_open_link") {
@@ -115,7 +150,73 @@ export async function prepareDevStudent(db: Db, input: PrepareStudentInput): Pro
   }
 
   const resetSessions = input.resetProgress ? await resetStudentProgress(db, student.id) : null;
-  return { linkId, link, teacherTelegramId, collections, teacherCollections, resetSessions };
+  const hardWords = input.hardWords ? await markHardWords(db, student.id, input.hardWords) : [];
+  if (input.timezone !== undefined) {
+    await db.update(users).set({ timezone: input.timezone }).where(eq(users.id, student.id));
+  }
+  const reminder = input.remindNow ? await prepareReminder(db, student.id, input.now ?? new Date()) : null;
+  const [after] = await db.select({ timezone: users.timezone }).from(users).where(eq(users.id, student.id));
+  return {
+    linkId,
+    link,
+    teacherTelegramId,
+    collections,
+    teacherCollections,
+    resetSessions,
+    hardWords,
+    timezone: after?.timezone ?? null,
+    reminder,
+  };
+}
+
+/** Время напоминания — текущая минута по поясу ученика; сегодняшнее напоминание снимается с очереди. */
+async function prepareReminder(db: Db, studentUserId: number, now: Date) {
+  const [user] = await db.select().from(users).where(eq(users.id, studentUserId));
+  const timezone = user?.timezone ?? DEV_DEFAULT_TIMEZONE;
+  const reminderTime = formatClock(localMinutes(now, timezone));
+  const today = localDate(now, timezone);
+  await db
+    .update(users)
+    .set({ timezone, reminderTime, remindersEnabled: true, botBlockedAt: null })
+    .where(eq(users.id, studentUserId));
+  await db.delete(notifications).where(eq(notifications.dedupeKey, dailyReminderKey(studentUserId, today)));
+  const [completed] = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.studentUserId, studentUserId),
+        eq(sessions.type, "daily_quest"),
+        eq(sessions.questLocalDate, today),
+        eq(sessions.status, "completed"),
+      ),
+    );
+  return { reminderTime, localDate: today, questCompletedToday: completed !== undefined };
+}
+
+/**
+ * Отмечает сложными первые по алфавиту слова ученика с действующими карточками, которые ещё не сложные.
+ * Первому ставится серия на единицу меньше нужной, остальным — 0.
+ */
+async function markHardWords(db: Db, studentUserId: number, limit: number) {
+  const words = groupWords(await listVisibleCards(db, studentUserId));
+  const current = await db
+    .select({ id: studentWords.id, status: studentWords.status })
+    .from(studentWords)
+    .where(eq(studentWords.studentUserId, studentUserId));
+  const hardIds = new Set(current.filter((word) => word.status === "hard").map((word) => word.id));
+  const chosen = words.filter((word) => !hardIds.has(word.studentWordId)).slice(0, limit);
+  const now = new Date();
+  return Promise.all(
+    chosen.map(async (word, index) => {
+      const correctStreak = index === 0 ? LEARNING_SETTINGS.masteryStreak - 1 : 0;
+      await db
+        .update(studentWords)
+        .set({ status: "hard", correctStreak, consecutiveErrors: 0, hardSince: now, masteredAt: null, lastCountedSessionId: null })
+        .where(eq(studentWords.id, word.studentWordId));
+      return { english: word.english, translation: word.translation, correctStreak };
+    }),
+  );
 }
 
 /**
@@ -212,6 +313,11 @@ async function resetStudentProgress(db: Db, studentUserId: number): Promise<numb
         masteredAt: null,
       })
       .where(eq(studentWords.studentUserId, studentUserId));
+
+    // Напоминания относятся к удалённым квестам: после сброса планировщик пришлёт сегодняшнее заново.
+    await tx
+      .delete(notifications)
+      .where(and(eq(notifications.recipientUserId, studentUserId), eq(notifications.reason, "daily_reminder")));
 
     if (sessionIds.length > 0) {
       const ownQuestions = tx.select({ id: questions.id }).from(questions).where(inArray(questions.sessionId, sessionIds));

@@ -1,5 +1,5 @@
 // Что ученик видит в словаре. Единственное место, решающее, какие материалы ему открыты.
-import { and, asc, desc, eq, inArray, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, inArray, isNotNull, isNull, or, sql, type Column, type SQL } from "drizzle-orm";
 import type { DbOrTx } from "../db/client.js";
 import { cardVersions, studentCards, studentCollections, studentLinks } from "../db/schema.js";
 
@@ -9,13 +9,28 @@ export type CardVersionRow = typeof cardVersions.$inferSelect;
  * Копии ученика открыты при активной связи и после отвязки. Запись заявителя сюда не попадает:
  * у неё статус pending_confirmation, а при отклонении student_user_id очищается.
  */
-function ownedVisibleLink(studentUserId: number): SQL {
+function ownedVisibleLink(studentUserId: number | Column): SQL {
   return and(
     eq(studentLinks.studentUserId, studentUserId),
     or(eq(studentLinks.status, "active"), eq(studentLinks.status, "ended")),
     isNotNull(studentLinks.startedAt),
     isNull(studentCollections.deletedAt),
   ) as SQL;
+}
+
+/**
+ * Условие «у ученика есть хотя бы одна действующая карточка» для запроса по нескольким ученикам
+ * (планировщик напоминаний). Правило видимости то же, что у listVisibleCards.
+ */
+export function visibleCardExists(db: DbOrTx, studentUserId: Column): SQL<boolean> {
+  return exists(
+    db
+      .select({ one: sql`1` })
+      .from(studentCards)
+      .innerJoin(studentCollections, eq(studentCollections.id, studentCards.studentCollectionId))
+      .innerJoin(studentLinks, eq(studentLinks.id, studentCollections.studentLinkId))
+      .where(and(ownedVisibleLink(studentUserId), isNull(studentCards.deletedAt), isNotNull(studentCards.studentWordId))),
+  ) as SQL<boolean>;
 }
 
 export type VisibleCard = {

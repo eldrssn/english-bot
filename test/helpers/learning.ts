@@ -1,11 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
-import { ANSWER_PATTERN, collectionPage, collectionsPage, startTest } from "../../src/bot/callback-data.js";
+import { ANSWER_PATTERN, answerButton, collectionPage, collectionsPage, startTest } from "../../src/bot/callback-data.js";
 import { createDb, type Db } from "../../src/db/client.js";
 import type { FixtureCard, FixtureCollection } from "../../src/db/fixtures.js";
 import { cardVersions, questions, sessions, studentCards, studentCollections, studentWords, users } from "../../src/db/schema.js";
 import { issueFixtureCollection } from "../../src/learning/issue.js";
 import { TEST_DATABASE_URL } from "./db.js";
-import { callbackUpdate, createFakeBot, lastButtons, type ApiCall } from "./fake-telegram.js";
+import { nextStep, primaryAnswerText } from "../../src/domain/learning/index.js";
+import { callbackUpdate, createFakeBot, lastButtons, textUpdate, type ApiCall } from "./fake-telegram.js";
 import { connectDirectly, makeTeacher } from "./linking.js";
 
 export type FakeBot = ReturnType<typeof createFakeBot>;
@@ -164,4 +165,47 @@ export async function waitForBlockedQuery(db: Db) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error("Запрос так и не встал на блокировку");
+}
+
+/** Текущий шаг текущего занятия ученика: вопрос, его версия и номер попытки. Пусто, если отвечать не на что. */
+export async function currentStep(db: Db, studentUserId: number) {
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(and(eq(sessions.studentUserId, studentUserId), eq(sessions.status, "current")));
+  if (!session?.learningState) return null;
+  const step = nextStep(session.learningState);
+  if (step.kind === "finished") return null;
+  const [row] = await db
+    .select({ question: questions, version: cardVersions })
+    .from(questions)
+    .innerJoin(cardVersions, eq(cardVersions.id, questions.cardVersionId))
+    .where(and(eq(questions.sessionId, session.id), eq(questions.position, step.position)));
+  if (!row) return null;
+  return { ...row, session, attemptNumber: step.attemptNumber, isRepeat: step.kind === "repeat" };
+}
+
+/** Заведомо неверный ввод: не совпадает ни с одним вариантом тестовых карточек. */
+export const WRONG_TEXT = "заведомо неверный ответ";
+
+/**
+ * Отвечает на текущий вопрос так, как ответил бы ученик: кнопкой или сообщением.
+ * Возвращает отвеченный шаг.
+ */
+export async function answerCurrent(fake: FakeBot, db: Db, telegramId: number, correct: boolean) {
+  const step = await currentStep(db, await userId(db, telegramId));
+  if (!step) throw new Error("Нет текущего вопроса");
+  if (step.question.format === "choice") {
+    // Кнопка строится по вопросу текущего шага, а не по последнему сообщению: последним может быть,
+    // например, список «Сложных слов». Бот сам проверит, что кнопка относится к текущему шагу.
+    const options = step.question.options ?? [];
+    const correctIndex = step.question.correctOptionIndex!;
+    const optionIndex = correct ? correctIndex : options.findIndex((_, index) => index !== correctIndex);
+    if (optionIndex < 0) throw new Error("Нет неверного варианта");
+    await fake.bot.handleUpdate(callbackUpdate(telegramId, answerButton(step.question.id, step.attemptNumber, optionIndex)));
+  } else {
+    const text = correct ? primaryAnswerText(step.version, step.question.direction) : WRONG_TEXT;
+    await fake.bot.handleUpdate(textUpdate(telegramId, text));
+  }
+  return step;
 }

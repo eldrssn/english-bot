@@ -395,6 +395,11 @@ export function CollectionScreen({ id }: { id: number }) {
             <Link className="btn btn-primary" href={`/collections/${collection.id}/issue`}>
               Выдать ученикам
             </Link>
+            {collection.issuedCount > 0 ? (
+              <Link className="btn" href={`/collections/${collection.id}/results`}>
+                Результаты по подборке
+              </Link>
+            ) : null}
           </div>
 
           {collection.issuedCount > 0 ? (

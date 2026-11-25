@@ -478,6 +478,11 @@ export const questions = pgTable(
     options: jsonb("options").$type<QuestionOption[]>(),
     correctOptionIndex: integer("correct_option_index"),
     status: questionStatus("status").notNull().default("open"),
+    /**
+     * Сообщение Telegram, в котором вопрос показан последний раз. Номера сообщений личного чата растут,
+     * поэтому текст, отправленный раньше показа, ответом на этот вопрос не считается. Пусто: показ не записан.
+     */
+    promptMessageId: bigint("prompt_message_id", { mode: "number" }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -491,6 +496,10 @@ export const questions = pgTable(
   ],
 );
 
+/**
+ * Попытка неизменна: триггер attempts_immutable (миграция 0002) запрещает UPDATE. Повторение сложных слов
+ * и повтор ошибки создают новые попытки, исходный результат занятия не переписывается.
+ */
 export const attempts = pgTable(
   "attempts",
   {
@@ -507,6 +516,8 @@ export const attempts = pgTable(
     isCorrect: boolean("is_correct").notNull(),
     /** Эта попытка сделала слово сложным: итог занятия показывает такие слова, даже если слово потом освоено. */
     becameHard: boolean("became_hard").notNull().default(false),
+    /** Эта попытка завершила серию «5 из 5»: слово освоено и ушло из «Сложных слов». */
+    becameMastered: boolean("became_mastered").notNull().default(false),
     answeredAt: timestampTz("answered_at").notNull().defaultNow(),
   },
   (t) => [
@@ -514,6 +525,7 @@ export const attempts = pgTable(
     unique("attempts_question_attempt_unique").on(t.questionId, t.attemptNumber),
     index("attempts_link_idx").on(t.studentLinkId),
     check("attempts_number_range", sql`${t.attemptNumber} IN (1, 2)`),
+    check("attempts_hard_or_mastered", sql`NOT (${t.becameHard} AND ${t.becameMastered})`),
   ],
 );
 

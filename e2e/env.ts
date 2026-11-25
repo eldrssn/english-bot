@@ -23,6 +23,8 @@ export const accounts = {
   phoneDark: { telegramId: 910000006, port: 3106, teacher: true },
   desktopLight: { telegramId: 910000007, port: 3107, teacher: true },
   desktopDark: { telegramId: 910000008, port: 3108, teacher: true },
+  // Результаты (этап 7): свой преподаватель по той же причине — лимит ввода кода не делится с другими сценариями.
+  results: { telegramId: 910000009, port: 3109, teacher: true },
 } as const;
 
 export type AccountName = keyof typeof accounts;

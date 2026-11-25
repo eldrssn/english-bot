@@ -18,11 +18,17 @@ export type PlanItem = PlanWord & {
 
 export type DirectionMode = "alternate" | "random";
 
+/**
+ * Формат вопросов плана. mixed: кнопки и ввод чередуются парами (кнопки, кнопки, ввод, ввод), а направления —
+ * через один, поэтому встречаются все четыре сочетания. С чего начать, выбирает генератор.
+ */
+export type PlanFormat = QuestionFormat | "mixed";
+
 export type BuildPlanOptions = {
   rng: Rng;
   /** alternate: направления чередуются, первое выбирает генератор. random: каждое выбирает генератор. */
   directionMode?: DirectionMode;
-  format?: QuestionFormat;
+  format?: PlanFormat;
 };
 
 /** План занятия: слова в случайном порядке, каждое слово один раз. */
@@ -34,9 +40,12 @@ export function buildSessionPlan(words: readonly PlanWord[], options: BuildPlanO
   }
   const order = shuffled([...unique.values()], rng);
   let direction = randomDirection(rng);
+  const formatOffset = format === "mixed" ? randomIndex(2, rng) : 0;
   return order.map((word, index) => {
     if (index > 0) direction = directionMode === "alternate" ? oppositeDirection(direction) : randomDirection(rng);
-    return { studentWordId: word.studentWordId, cardVersionId: word.cardVersionId, direction, format };
+    const itemFormat: QuestionFormat =
+      format === "mixed" ? ((Math.floor(index / 2) + formatOffset) % 2 === 0 ? "choice" : "typed") : format;
+    return { studentWordId: word.studentWordId, cardVersionId: word.cardVersionId, direction, format: itemFormat };
   });
 }
 

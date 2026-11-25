@@ -23,18 +23,31 @@ const BOT_INFO: UserFromGetMe = {
 
 export type ApiCall = { method: string; payload: Record<string, any> };
 
+// Номера сообщений личного чата общие для бота и ученика и только растут, как в Telegram:
+// по ним сервис отличает ответ, отправленный после показа вопроса, от отправленного раньше.
+let lastMessageId = 1000;
+const nextMessageId = () => ++lastMessageId;
+
 export type FakeBotOptions = {
   /** Позволяет подставить ответ Telegram, например ошибку. */
   respond?: (call: ApiCall) => unknown;
   /** Предсказуемый порядок вопросов и вариантов. */
   rng?: () => number;
+  /** Подменённые часы: локальная дата квеста. */
+  now?: () => Date;
 };
 
 /** Бот с настоящей обработкой и базой, но API заменён: ни один запрос не уходит в сеть. */
 export function createFakeBot(db: Db, options: FakeBotOptions = {}) {
   const calls: ApiCall[] = [];
-  const bot = createBot({ token: FAKE_TOKEN, db, appSecret: TEST_APP_SECRET, botInfo: BOT_INFO, ...(options.rng ? { rng: options.rng } : {}) });
-  let nextMessageId = 1000;
+  const bot = createBot({
+    token: FAKE_TOKEN,
+    db,
+    appSecret: TEST_APP_SECRET,
+    botInfo: BOT_INFO,
+    ...(options.rng ? { rng: options.rng } : {}),
+    ...(options.now ? { now: options.now } : {}),
+  });
 
   bot.api.config.use(async (_prev, method, payload) => {
     const call = { method, payload: payload as Record<string, any> };
@@ -45,7 +58,7 @@ export function createFakeBot(db: Db, options: FakeBotOptions = {}) {
       method === "answerCallbackQuery"
         ? true
         : {
-            message_id: nextMessageId++,
+            message_id: nextMessageId(),
             date: 0,
             chat: { id: call.payload.chat_id ?? 0, type: "private", first_name: "x" },
             text: call.payload.text,
@@ -62,11 +75,11 @@ export const newUpdateId = () => nextUpdateId++;
 const from = (telegramId: number) => ({ id: telegramId, is_bot: false, first_name: "Анна", username: "anna" });
 const chat = (telegramId: number) => ({ id: telegramId, type: "private" as const, first_name: "Анна" });
 
-export function textUpdate(telegramId: number, text: string, updateId = newUpdateId()): Update {
+export function textUpdate(telegramId: number, text: string, updateId = newUpdateId(), messageId = nextMessageId()): Update {
   return {
     update_id: updateId,
     message: {
-      message_id: updateId,
+      message_id: messageId,
       date: 0,
       from: from(telegramId),
       chat: chat(telegramId),

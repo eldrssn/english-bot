@@ -15,6 +15,14 @@ export const DIRECTION_HINT: Record<Direction, string> = {
   en_ru: "Выберите перевод на русский",
 };
 
+export const TYPED_HINT: Record<Direction, string> = {
+  ru_en: "Напишите перевод на английский",
+  en_ru: "Напишите перевод на русский",
+};
+
+/** Как TYPED_FALLBACK_NOTE в learning-render.ts. */
+export const TYPED_FALLBACK_NOTE = "Других вариантов для кнопок не нашлось, поэтому перевод нужно написать сообщением.";
+
 export type PreviewCard = Pick<
   CardContent,
   "english" | "translation" | "example" | "explanation" | "acceptedRuEn" | "acceptedEnRu" | "allowOmitTo"
@@ -59,9 +67,11 @@ export function correctFeedback(card: PreviewCard): string {
   return lines.join("\n");
 }
 
-/** Слово нельзя проверить кнопками (skippedText). */
-export const skippedText = (card: PreviewCard) =>
-  `Слово «${clip(card.english, 100)}» пока нельзя проверить кнопками: не хватает других вариантов. Пропускаем его.`;
+/** Вопрос с вводом вместо кнопок: неверных вариантов нет (typedQuestionScreen с typedFallback). */
+export function typedFallbackScreen(question: { direction: Direction; prompt: string; number: number; total: number }): BotScreen {
+  const lines = [`Вопрос ${question.number} из ${question.total}`, "", `${TYPED_HINT[question.direction]}:`, question.prompt, "", TYPED_FALLBACK_NOTE];
+  return { text: lines.join("\n"), buttons: [["На паузу"]] };
+}
 
 /** Уведомление «Новая подборка» (renderNotification, new_collection). */
 export const newCollectionMessage = (title: string, wordCount: number) =>
@@ -81,7 +91,8 @@ const toAnswerCard = (card: PreviewCard): AnswerCard => ({
 
 export type QuestionPreview =
   | { direction: Direction; available: true; screen: BotScreen; correctIndex: number }
-  | { direction: Direction; available: false; text: string };
+  /** Кнопок не будет: бот попросит написать перевод. */
+  | { direction: Direction; available: false; screen: BotScreen };
 
 /**
  * Вопрос в обе стороны. Неверные варианты бот берёт из всех слов ученика, здесь — из других карточек
@@ -96,13 +107,14 @@ export function questionPreviews(card: PreviewCard, others: readonly PreviewCard
       pool: others.map(toAnswerCard),
       rng: createSeededRng(17 + index),
     });
-    if (!built.available) return { direction, available: false, text: skippedText(card) };
+    const prompt = promptText(toAnswerCard(card), direction);
+    if (!built.available) return { direction, available: false, screen: typedFallbackScreen({ direction, prompt, ...position }) };
     const options = built.options.map((option) => option.text);
     return {
       direction,
       available: true,
       correctIndex: built.correctOptionIndex,
-      screen: questionScreen({ direction, prompt: promptText(toAnswerCard(card), direction), options, ...position }),
+      screen: questionScreen({ direction, prompt, options, ...position }),
     };
   });
 }

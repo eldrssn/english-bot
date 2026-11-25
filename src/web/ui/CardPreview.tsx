@@ -61,9 +61,9 @@ export function CardPreview({
                   <>
                     <p className="small">
                       В подборке пока нет других слов для неверных вариантов. Если их не окажется и среди остальных слов ученика, бот
-                      напишет:
+                      попросит написать перевод:
                     </p>
-                    <BotMessage screen={{ text: question.text }} label={DIRECTION_TITLE[question.direction]} />
+                    <BotMessage screen={question.screen} label={DIRECTION_TITLE[question.direction]} />
                   </>
                 )}
               </div>

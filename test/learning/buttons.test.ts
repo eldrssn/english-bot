@@ -8,9 +8,13 @@ import {
   collectionPage,
   pauseSession,
   resumeSession,
+  reminderTimeButton,
   startTest,
+  TIMEZONE_PATTERN,
+  timezoneButton,
   wordCard,
 } from "../../src/bot/callback-data.js";
+import { TIMEZONE_PAGES } from "../../src/bot/timezones.js";
 import { attempts, cardViews, processedUpdates, questions, sessions, studentWords } from "../../src/db/schema.js";
 import { lockUser } from "../../src/linking/locks.js";
 import { createLearningService } from "../../src/learning/service.js";
@@ -527,27 +531,49 @@ describe("текст без открытого вопроса", () => {
   });
 });
 
-describe("разделы следующих этапов", () => {
+describe("разделы этапа 6 в меню", () => {
   it.each([
-    ["Сложные слова"],
-    ["Ежедневная практика"],
-    ["Экзамен"],
-    ["Мой прогресс"],
-    ["Настройки"],
-  ])("%s: честное «появится позже», данных нет", async (title) => {
+    ["Ежедневная практика", "Ежедневная практика"],
+    ["Экзамен", "Экзамен"],
+    ["Мой прогресс", "Мой прогресс"],
+    ["Настройки", "Настройки"],
+  ])("%s: открывается рабочий раздел, а не «появится позже»", async (title, heading) => {
     await started();
     const fake = createFakeBot(db);
     await fake.bot.handleUpdate(textUpdate(STUDENT, "/start"));
     const button = lastButtons(fake.calls).find((item) => item.text === title)!;
     await fake.bot.handleUpdate(callbackUpdate(STUDENT, button.callback_data));
-    expect(sentTexts(fake.calls).at(-1)).toBe("Этот раздел появится позже");
+    const text = sentTexts(fake.calls).at(-1)!;
+    expect(text).not.toContain("появится позже");
+    expect(text).toContain(heading);
+  });
+
+  it.each([
+    ["m:soon:daily", "Ежедневная практика"],
+    ["m:soon:exam", "Экзамен"],
+    ["m:soon:progress", "Мой прогресс"],
+    ["m:soon:settings", "Настройки"],
+  ])("кнопка %s из старого сообщения ведёт в настоящий раздел", async (data, heading) => {
+    await started();
+    const fake = createFakeBot(db);
+    await fake.bot.handleUpdate(callbackUpdate(STUDENT, data));
+    expect(sentTexts(fake.calls).at(-1)).toContain(heading);
   });
 
   it("все кнопки укладываются в 64 байта при самых длинных ID", () => {
     const id = 999_999_999_999_999;
-    for (const data of [answerButton(id, 2, 3), collectionCard(id, id), collectionPage(id, id), wordCard(id, id)]) {
+    const longestZone = [...TIMEZONE_PAGES.flatMap((page) => page.options.map((option) => option.zone))].sort((a, b) => b.length - a.length)[0]!;
+    for (const data of [
+      answerButton(id, 2, 3),
+      collectionCard(id, id),
+      collectionPage(id, id),
+      wordCard(id, id),
+      timezoneButton(longestZone),
+      reminderTimeButton(23 * 60),
+    ]) {
       expect(Buffer.byteLength(data)).toBeLessThanOrEqual(64);
     }
     expect(ANSWER_PATTERN.test(answerButton(id, 2, 3))).toBe(true);
+    expect(TIMEZONE_PATTERN.test(timezoneButton(longestZone))).toBe(true);
   });
 });

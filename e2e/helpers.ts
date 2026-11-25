@@ -148,3 +148,28 @@ export async function addCards(page: Page, collectionId: number, cards: Card[]) 
 
 /** Сообщение о результате действия в шапке страницы (а не индикатор загрузки или другие живые области). */
 export const flashMessage = (page: Page) => page.getByRole("status", { name: "Сообщение о результате" });
+
+/** Ученик проходит тест по каждой своей подборке: настоящий скрипт разработки, настоящая база. */
+export async function studentPractices(telegramId: number, wrong: string[] = []) {
+  const args = ["--import", "tsx", "scripts/dev-student-practice.ts", String(telegramId)];
+  if (wrong.length > 0) args.push(`--wrong=${wrong.join(",")}`);
+  const { stdout } = await run(process.execPath, args, { env: { ...process.env, ...serverEnv } });
+  return stdout;
+}
+
+/** Выдача подборки через API кабинета (сама выдача через интерфейс проверяется в materials.spec). */
+export async function issueThroughApi(page: Page, collectionId: number, studentIds: number[]) {
+  const status = await page.evaluate(
+    async ({ id, students }) => {
+      const me = await (await fetch("/api/auth/me")).json();
+      const response = await fetch(`/api/collections/${id}/issue`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": me.csrfToken },
+        body: JSON.stringify({ studentIds: students }),
+      });
+      return response.status;
+    },
+    { id: collectionId, students: studentIds },
+  );
+  expect(status).toBe(200);
+}

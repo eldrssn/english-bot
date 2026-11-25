@@ -77,6 +77,20 @@ describe("buildSessionPlan", () => {
     expect(buildSessionPlan(words(1), { rng: createSeededRng(1), format: "typed" })[0]?.format).toBe("typed");
   });
 
+  it("смешанный формат: кнопки и ввод парами, вместе с направлениями дают все четыре сочетания", () => {
+    for (let seed = 0; seed < 10; seed++) {
+      const plan = buildSessionPlan(words(8), { rng: createSeededRng(seed), format: "mixed" });
+      const formats = plan.map((item) => item.format);
+      expect(formats.filter((format) => format === "typed")).toHaveLength(4);
+      for (let index = 0; index < 8; index += 2) expect(formats[index]).toBe(formats[index + 1]);
+      expect(new Set(plan.map((item) => `${item.direction}:${item.format}`)).size).toBe(4);
+    }
+    const starts = new Set(
+      Array.from({ length: 20 }, (_, seed) => buildSessionPlan(words(2), { rng: createSeededRng(seed), format: "mixed" })[0]?.format),
+    );
+    expect(starts).toEqual(new Set(["choice", "typed"]));
+  });
+
   it("генератор вне диапазона — ошибка вызывающего кода", () => {
     expect(() => buildSessionPlan(words(2), { rng: () => 1 })).toThrow(RangeError);
   });

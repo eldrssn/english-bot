@@ -3,11 +3,12 @@ import path from "node:path";
 import fastifyCookie from "@fastify/cookie";
 import fastifyStatic from "@fastify/static";
 import { sql } from "drizzle-orm";
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
+import Fastify, { type FastifyBaseLogger, type FastifyInstance } from "fastify";
 import { webhookCallback } from "grammy";
 import type { Bot } from "grammy";
 import type { BotContext } from "../bot/context.js";
 import type { Db } from "../db/client.js";
+import type { Logger } from "../logger.js";
 import { errorBody } from "./api/errors.js";
 import { registerApi, type ApiOptions } from "./api/index.js";
 
@@ -17,7 +18,8 @@ const API_PREFIX = "/api";
 
 export type BuildServerOptions = {
   db: Db;
-  logger?: FastifyServerOptions["logger"];
+  /** Журнал запросов и ошибок. Без него сервер молчит (так работают тесты). */
+  logger?: Logger;
   /** Если задано, принимаем webhook с проверкой секретного токена. Иначе маршрута нет: локально работает опрос. */
   webhook?: { bot: Bot<BotContext>; secretToken: string };
   /** Если задано, работает API кабинета. */
@@ -53,8 +55,21 @@ export function buildServer(options: BuildServerOptions): FastifyInstance {
 
   const proxyHops = options.proxyHops ?? 0;
   const app = Fastify({
-    logger: options.logger ?? false,
+    // Тип журнала Fastify уже, чем у pino: приводим, чтобы экземпляр сервера остался обычным FastifyInstance.
+    ...(options.logger ? { loggerInstance: options.logger as FastifyBaseLogger } : { logger: false }),
     trustProxy: (_address: string, hop: number) => hop < proxyHops,
+  });
+
+  // Общий обработчик для всего, кроме API (у API свой, с кодами ошибок кабинета): webhook, health, статика.
+  // Подробности уходят в журнал, клиенту — только общий ответ. 500 на webhook заставляет Telegram повторить событие.
+  app.setErrorHandler((error, request, reply) => {
+    const status = (error as { statusCode?: number }).statusCode;
+    if (status !== undefined && status >= 400 && status < 500) {
+      request.log.warn({ err: error }, "Запрос отклонён");
+      return reply.code(status).send({ error: "Bad Request" });
+    }
+    request.log.error({ err: error }, "Необработанная ошибка запроса");
+    return reply.code(500).send({ error: "Internal Server Error" });
   });
 
   app.decorate("registeredRoutes", [] as RegisteredRoute[]);

@@ -1,4 +1,15 @@
-import type { InvitationOutcome, IssueOutcome, LoginErrorCode, PendingAction, StudentDetail, StudentStatus } from "../../shared/api-contract";
+import type {
+  InvitationOutcome,
+  IssueOutcome,
+  LoginErrorCode,
+  PendingAction,
+  ResultSession,
+  Score,
+  SessionKind,
+  StudentDetail,
+  StudentStatus,
+  WordState,
+} from "../../shared/api-contract";
 
 /** Формулировки статусов из плана разработки. */
 export const STATUS_LABEL: Record<StudentStatus, string> = {
@@ -68,3 +79,36 @@ export const ISSUE_OUTCOME_LABEL: Record<IssueOutcome, { preview: string; done: 
   },
   already_issued: { preview: "Уже выдана, второй копии не будет", done: "Уже была выдана раньше" },
 };
+
+export const SESSION_KIND_LABEL: Record<SessionKind, string> = {
+  test: "Тест",
+  translate: "«Переведи меня»",
+  hard_words: "Практика сложных слов",
+  daily_quest: "Ежедневный квест",
+  exam: "Экзамен",
+};
+
+export const SESSION_STATUS_LABEL: Record<ResultSession["status"], string> = {
+  current: "Идёт",
+  paused: "На паузе",
+  completed: "Завершено",
+  incomplete: "Не завершено",
+};
+
+export const WORD_STATE_LABEL: Record<WordState, string> = {
+  hard: "Сложное",
+  learning: "Изучается",
+  mastered: "Освоено",
+};
+
+/** «4 из 6 (67%)»; без ответов — «нет ответов». */
+export function scoreText(score: Score): string {
+  if (score.total === 0) return "нет ответов";
+  return `${score.correct} из ${score.total} (${Math.round((score.correct / score.total) * 100)}%)`;
+}
+
+/** Название занятия: вид и подборка, если она есть. */
+export const sessionTitle = (type: SessionKind, title: string | null) =>
+  title ? `${SESSION_KIND_LABEL[type]}: ${title}` : SESSION_KIND_LABEL[type];
+
+export const DIRECTION_LABEL = { ru_en: "ru→en", en_ru: "en→ru" } as const;

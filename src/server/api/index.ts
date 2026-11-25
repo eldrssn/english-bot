@@ -13,6 +13,8 @@ import { MaterialsError } from "../../materials/errors.js";
 import { createIssueService } from "../../materials/issue.js";
 import { createSourceService } from "../../materials/source.js";
 import { CSRF_HEADER, apiRoutes, type LoginErrorCode, type MeResponse } from "../../shared/api-contract.js";
+import { csvContentDisposition, studentResultsCsv } from "../../results/csv.js";
+import { getCollectionResults, getStudentResults } from "../../results/student-results.js";
 import { RateLimiter } from "../rate-limit.js";
 import { ApiFailure, errorBody } from "./errors.js";
 import {
@@ -55,8 +57,10 @@ export type ApiOptions = {
   devLoginTelegramId: number | null;
 };
 
-type RouteSpec = { method: string; path: string; response: z.ZodType; body?: z.ZodType };
+/** Маршрут с response отвечает JSON по схеме; маршрут-файл (download) отдаёт текст, заголовки ставит обработчик. */
+type RouteSpec = { method: string; path: string; response?: z.ZodType; body?: z.ZodType };
 type BodyOf<S extends RouteSpec> = S["body"] extends z.ZodType ? z.output<S["body"]> : undefined;
+type ResultOf<S extends RouteSpec> = S extends { response: infer R extends z.ZodType } ? z.input<R> : string;
 type TeacherContext<S extends RouteSpec> = {
   teacher: SessionUser;
   body: BodyOf<S>;
@@ -104,9 +108,11 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
     }
     const status = (error as { statusCode?: number }).statusCode;
     if (status !== undefined && status >= 400 && status < 500) {
+      request.log.warn({ err: error }, "Запрос кабинета отклонён");
       return reply.code(status).send(errorBody("bad_request"));
     }
-    request.log.error(error);
+    // Текст исключения и стек — только в журнал. Кабинет показывает общее «Что-то пошло не так».
+    request.log.error({ err: error }, "Ошибка запроса кабинета");
     return reply.code(500).send(errorBody("internal"));
   });
 
@@ -121,6 +127,11 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
     return session;
   }
 
+  /** Ответ проверяется по контракту: лишнее поле не уйдёт клиенту. */
+  function respond(spec: RouteSpec, result: unknown) {
+    return spec.response ? spec.response.parse(result) : result;
+  }
+
   function parseBody<S extends RouteSpec>(spec: S, request: FastifyRequest): BodyOf<S> {
     if (!spec.body) return undefined as BodyOf<S>;
     const parsed = spec.body.safeParse(request.body);
@@ -130,7 +141,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
 
   function teacherRoute<S extends RouteSpec>(
     spec: S,
-    handler: (context: TeacherContext<S>) => Promise<z.input<S["response"]>>,
+    handler: (context: TeacherContext<S>) => Promise<ResultOf<S>>,
   ) {
     app.route({
       method: spec.method as "GET",
@@ -139,7 +150,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
         const session = await requireTeacher(request);
         const body = parseBody(spec, request);
         const result = await handler({ teacher: session.user, body, request, reply });
-        return spec.response.parse(result);
+        return respond(spec, result);
       },
     });
   }
@@ -167,7 +178,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
 
   function studentRoute<S extends RouteSpec>(
     spec: S,
-    handler: (context: StudentContext<S>) => Promise<z.input<S["response"]>>,
+    handler: (context: StudentContext<S>) => Promise<ResultOf<S>>,
     guard?: (teacher: SessionUser) => void,
   ) {
     app.route({
@@ -179,7 +190,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
         const linkId = await requireOwnLink(session.user.id, (request.params as { id?: unknown }).id);
         const body = parseBody(spec, request);
         const result = await handler({ teacher: session.user, linkId, body, request, reply });
-        return spec.response.parse(result);
+        return respond(spec, result);
       },
     });
   }
@@ -190,7 +201,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
    */
   function resourceRoute<S extends RouteSpec & { access: ResourceAccess }>(
     spec: S,
-    handler: (context: ResourceContext<S>) => Promise<z.input<S["response"]>>,
+    handler: (context: ResourceContext<S>) => Promise<ResultOf<S>>,
     options: { bodyLimit?: number } = {},
   ) {
     const resolve = resolvers[spec.access];
@@ -204,7 +215,7 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
         if (id === null) throw new ApiFailure("not_found");
         const body = parseBody(spec, request);
         const result = await handler({ teacher: session.user, id, body, request, reply });
-        return spec.response.parse(result);
+        return respond(spec, result);
       },
     });
   }
@@ -455,4 +466,29 @@ export async function registerApi(app: FastifyInstance, db: Db, options: ApiOpti
   resourceRoute(apiRoutes.editCopyCard, ({ teacher, id, body }) => copies.editCard(teacher.id, id, body));
 
   resourceRoute(apiRoutes.deleteCopyCard, ({ teacher, id }) => copies.removeCard(teacher.id, id));
+
+  // ---------- Результаты ----------
+
+  async function resultsOrNotFound(teacherUserId: number, linkId: number) {
+    const results = await getStudentResults(db, teacherUserId, linkId);
+    if (!results) throw new ApiFailure("not_found");
+    return results;
+  }
+
+  studentRoute(apiRoutes.studentResults, ({ teacher, linkId }) => resultsOrNotFound(teacher.id, linkId));
+
+  studentRoute(apiRoutes.studentResultsCsv, async ({ teacher, linkId, reply }) => {
+    const results = await resultsOrNotFound(teacher.id, linkId);
+    reply
+      .header("content-type", "text/csv; charset=utf-8")
+      .header("content-disposition", csvContentDisposition(results.student.displayName, results.generatedAt))
+      .header("x-content-type-options", "nosniff");
+    return studentResultsCsv(results);
+  });
+
+  resourceRoute(apiRoutes.collectionResults, async ({ teacher, id }) => {
+    const results = await getCollectionResults(db, teacher.id, id);
+    if (!results) throw new ApiFailure("not_found");
+    return results;
+  });
 }

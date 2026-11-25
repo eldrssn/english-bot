@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOG_LEVELS, type LogLevel } from "./logger.js";
 
 const postgresUrl = z
   .string()
@@ -46,6 +47,12 @@ function refineWebEnv(env: WebEnv, ctx: z.RefinementCtx) {
 
 const webEnvSchema = databaseEnvSchema.extend(webEnvFields).superRefine(refineWebEnv);
 
+/** Адрес webhook: свой или адрес кабинета, если он https (на Railway это один сервис). */
+function webhookBaseUrl(env: { WEBHOOK_BASE_URL?: string | undefined; WEB_BASE_URL?: string | undefined }) {
+  if (env.WEBHOOK_BASE_URL) return env.WEBHOOK_BASE_URL;
+  return env.WEB_BASE_URL?.startsWith("https://") ? env.WEB_BASE_URL : undefined;
+}
+
 const appEnvSchema = databaseEnvSchema
   .extend({
     ...webEnvFields,
@@ -69,12 +76,21 @@ const appEnvSchema = databaseEnvSchema
       emptyToUndefined,
       z.string().regex(/^https?:\/\/.+/, "ожидается http(s)-адрес").optional(),
     ),
+    LOG_LEVEL: z.preprocess(emptyToUndefined, z.enum(LOG_LEVELS).default("info")),
   })
   .superRefine((env, ctx) => {
     refineWebEnv(env, ctx);
+    // На сервере только webhook: постоянный опрос там не нужен, а два процесса с опросом мешали бы друг другу.
+    if (env.NODE_ENV === "production" && env.BOT_MODE !== "webhook") {
+      ctx.addIssue({ code: "custom", path: ["BOT_MODE"], message: "при NODE_ENV=production нужен webhook" });
+    }
     if (env.BOT_MODE !== "webhook") return;
-    if (!env.WEBHOOK_BASE_URL) {
-      ctx.addIssue({ code: "custom", path: ["WEBHOOK_BASE_URL"], message: "обязателен при BOT_MODE=webhook" });
+    if (!webhookBaseUrl(env)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["WEBHOOK_BASE_URL"],
+        message: "обязателен при BOT_MODE=webhook, если WEB_BASE_URL не https",
+      });
     }
     if (!env.WEBHOOK_SECRET) {
       ctx.addIssue({ code: "custom", path: ["WEBHOOK_SECRET"], message: "обязателен при BOT_MODE=webhook" });
@@ -102,6 +118,7 @@ export type AppConfig = DatabaseConfig & {
   host: string;
   webhook: { baseUrl: string; secret: string } | null;
   telegramApiRoot: string | undefined;
+  logLevel: LogLevel;
 };
 
 /** Ошибка настройки. Сообщение называет переменные, но не содержит их значений. */
@@ -150,10 +167,9 @@ export function loadWebConfig(env: NodeJS.ProcessEnv = process.env): DatabaseCon
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = parseEnv(appEnvSchema, env);
+  const baseUrl = webhookBaseUrl(parsed);
   const webhook =
-    parsed.BOT_MODE === "webhook" && parsed.WEBHOOK_BASE_URL && parsed.WEBHOOK_SECRET
-      ? { baseUrl: parsed.WEBHOOK_BASE_URL, secret: parsed.WEBHOOK_SECRET }
-      : null;
+    parsed.BOT_MODE === "webhook" && baseUrl && parsed.WEBHOOK_SECRET ? { baseUrl, secret: parsed.WEBHOOK_SECRET } : null;
   return {
     web: toWebConfig(parsed),
     databaseUrl: parsed.DATABASE_URL,
@@ -163,5 +179,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     host: parsed.HOST ?? (parsed.BOT_MODE === "webhook" ? "0.0.0.0" : "127.0.0.1"),
     webhook,
     telegramApiRoot: parsed.TELEGRAM_API_ROOT,
+    logLevel: parsed.LOG_LEVEL,
   };
 }

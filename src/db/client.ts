@@ -1,5 +1,6 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import { appLogger } from "../logger.js";
 import * as schema from "./schema.js";
 
 export type Db = NodePgDatabase<typeof schema>;
@@ -16,7 +17,7 @@ export function createDb(databaseUrl: string): DbHandle {
   const pool = new pg.Pool({ connectionString: databaseUrl });
   // Без обработчика обрыв простаивающего соединения завершил бы процесс.
   pool.on("error", (error) => {
-    console.error("Ошибка соединения с PostgreSQL:", error.message);
+    appLogger.error({ component: "db", err: error }, "Ошибка соединения с PostgreSQL");
   });
   return {
     db: drizzle(pool, { schema }),

@@ -182,14 +182,25 @@ describe("тексты уведомлений", () => {
     );
   });
 
-  it("у новой подборки кнопка «Посмотреть», у остальных уведомлений кнопок нет", () => {
+  it("у новой подборки кнопка «Посмотреть», у служебных уведомлений кнопок нет", () => {
     const keyboard = notificationKeyboard("new_collection", { studentCollectionId: 42, title: "Т", wordCount: 2 });
     expect(keyboard?.inline_keyboard.flat()).toEqual([{ text: "Посмотреть", callback_data: "c:n:42" }]);
     expect(notificationKeyboard("new_collection", {})).toBeUndefined();
     expect(notificationKeyboard("link_ended", { studentCollectionId: 42 })).toBeUndefined();
+    expect(notificationKeyboard("request_rejected", {})).toBeUndefined();
   });
 
-  it("часовой пояс не спрашивается", () => {
-    expect(renderNotification("link_confirmed", {})).not.toMatch(/пояс/i);
+  it("после подключения бот предлагает выбрать часовой пояс", () => {
+    expect(renderNotification("link_confirmed", {})).toContain("Выберите часовой пояс");
+    expect(notificationKeyboard("link_confirmed", {})?.inline_keyboard.flat()).toEqual([
+      { text: "Выбрать часовой пояс", callback_data: "s:zl:0" },
+    ]);
+  });
+
+  it("напоминание о практике — дословно по сценарию, с кнопкой «Начать»", () => {
+    expect(renderNotification("daily_reminder", { questLocalDate: "2026-11-24" })).toBe(
+      "Сегодня короткая практика: повторить сложные слова и проверить новые.",
+    );
+    expect(notificationKeyboard("daily_reminder", {})?.inline_keyboard.flat()).toEqual([{ text: "Начать", callback_data: "d:s" }]);
   });
 });

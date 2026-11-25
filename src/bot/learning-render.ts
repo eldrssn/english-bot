@@ -1,25 +1,36 @@
 // Тексты и разметка учебных разделов. Без обращений к базе и Telegram.
 import { InlineKeyboard } from "grammy";
+import { LEARNING_SETTINGS } from "../domain/learning/settings.js";
 import type {
   AnswerFeedback,
   AskedQuestion,
   CollectionCardScreen,
   CollectionScreen,
+  HardWord,
+  HardWordsScreen,
   OpenSession,
   SessionResult,
   WordPair,
+  WordProgress,
 } from "../learning/service.js";
 import type { VisibleCollection, VocabularyWord } from "../learning/vocabulary.js";
 import {
+  DAILY_OPEN,
+  EXAM_OPEN,
   MENU,
+  PROGRESS_OPEN,
+  SETTINGS_OPEN,
+  START_HARD_ALL,
   answerButton,
   collectionCard,
   collectionPage,
   collectionsPage,
+  hardWordsPage,
   pauseSession,
   resumeSession,
-  soonButton,
+  startHardSelected,
   startTest,
+  startTranslate,
   wordCard,
   wordsPage,
 } from "./callback-data.js";
@@ -38,9 +49,11 @@ export const LEARNING_TEXTS = {
   menu: "Выберите раздел.",
   menuFormer:
     "Преподаватель больше не ведёт ваши занятия. Вы можете заниматься по полученным материалам, новых материалов не будет.",
-  soon: "Этот раздел появится позже",
-  help: "Выберите раздел в меню. Тест проходит кнопками, прерванное занятие можно продолжить из меню.",
+  help:
+    "Выберите раздел в меню. В тесте ответ выбирается кнопкой, в «Переведи меня» перевод пишется сообщением. Прерванное занятие можно продолжить из меню.",
   noOpenQuestionHint: "Сейчас ответ выбирается кнопкой под вопросом. Чтобы вернуться к нему, нажмите «Продолжить».",
+  earlyAnswer: "Это сообщение отправлено раньше вопроса и не засчитано. Ответьте на вопрос ниже.",
+  blankAnswer: "Напишите перевод словами: в сообщении нет ни одной буквы. Ответ не засчитан.",
   staleCallback: "Этот вопрос уже неактуален.",
   answeredCallback: "Ответ на этот вопрос уже записан.",
   pausedCallback: "Это занятие на паузе.",
@@ -56,6 +69,12 @@ export const LEARNING_TEXTS = {
   cardNotFound: "Этой карточки больше нет.",
   sessionNotFound: "Занятие не найдено.",
   becameHard: "Слово попало в «Сложные слова».",
+  returnedToHard: "Слово снова попало в «Сложные слова»: две ошибки подряд.",
+  mastered: `Слово освоено: ${LEARNING_SETTINGS.masteryStreak} верных ответов подряд с первой попытки. Оно уходит из «Сложных слов».`,
+  streakReset: "Серия «5 из 5» начинается заново.",
+  noHardWords:
+    "Сложных слов нет. Слово попадает сюда, если ошибиться на нём дважды в одной серии: в тесте, «Переведи меня» или практике.",
+  hardWordsChanged: "Список сложных слов изменился. Выберите слова ещё раз.",
 } as const;
 
 export function fitMessage(text: string): string {
@@ -110,22 +129,28 @@ const OPEN_SESSIONS_IN_MENU = 3;
 export function menuKeyboard(open: readonly OpenSession[]): InlineKeyboard {
   const keyboard = new InlineKeyboard();
   for (const session of open.slice(0, OPEN_SESSIONS_IN_MENU)) {
-    keyboard.text(clip(`Продолжить: ${session.title ?? "занятие"}`, BUTTON_LABEL_LIMIT), resumeSession(session.sessionId)).row();
+    keyboard.text(clip(openSessionLabel(session), BUTTON_LABEL_LIMIT), resumeSession(session.sessionId)).row();
   }
   return keyboard
     .text("Все слова", wordsPage(0))
     .text("Подборки", collectionsPage(0))
     .row()
-    .text("Сложные слова", soonButton("hard"))
-    .text("Ежедневная практика", soonButton("daily"))
+    .text("Сложные слова", hardWordsPage(0))
+    .text("Ежедневная практика", DAILY_OPEN)
     .row()
-    .text("Экзамен", soonButton("exam"))
-    .text("Мой прогресс", soonButton("progress"))
+    .text("Экзамен", EXAM_OPEN)
+    .text("Мой прогресс", PROGRESS_OPEN)
     .row()
-    .text("Настройки", soonButton("settings"));
+    .text("Настройки", SETTINGS_OPEN);
 }
 
-export const soonKeyboard = () => toMenu(new InlineKeyboard());
+function openSessionLabel(session: OpenSession): string {
+  if (session.type === "hard_words") return "Продолжить: сложные слова";
+  if (session.type === "daily_quest") return "Продолжить: ежедневная практика";
+  if (session.type === "exam") return "Продолжить экзамен";
+  const title = session.title ?? "занятие";
+  return session.type === "translate" ? `Продолжить «Переведи меня»: ${title}` : `Продолжить: ${title}`;
+}
 
 // ---------- Все слова ----------
 
@@ -195,7 +220,7 @@ export function collectionScreen(
   requestedPage: number,
   timezone: string | null,
 ): Screen & { shownCardIds: number[] } {
-  const { collection, cards, openSessionId } = screen;
+  const { collection, cards, openSessions } = screen;
   const line = (card: CollectionCardItem, number: number) => {
     const mark = card.isNew ? ` [новая, ${formatDate(card.addedAt, timezone)}]` : "";
     return clip(`${number}. ${card.version.english} — ${card.version.primaryTranslation}${mark}`, LIST_LINE_LIMIT);
@@ -206,8 +231,11 @@ export function collectionScreen(
   const items = pages[page] ?? [];
 
   const keyboard = new InlineKeyboard();
-  if (openSessionId !== null) keyboard.text("Продолжить тест", resumeSession(openSessionId)).row();
-  else if (cards.length > 0) keyboard.text("Начать тест", startTest(collection.id)).row();
+  if (openSessions.test !== null) keyboard.text("Продолжить тест", resumeSession(openSessions.test));
+  else if (cards.length > 0) keyboard.text("Начать тест", startTest(collection.id));
+  if (openSessions.translate !== null) keyboard.text("Продолжить «Переведи меня»", resumeSession(openSessions.translate));
+  else if (cards.length > 0) keyboard.text("Переведи меня", startTranslate(collection.id));
+  if (openSessions.test !== null || openSessions.translate !== null || cards.length > 0) keyboard.row();
   for (const { card, number } of items) {
     keyboard.text(clip(`${number}. ${card.version.english}`, BUTTON_LABEL_LIMIT), collectionCard(card.cardId, page)).row();
   }
@@ -237,12 +265,25 @@ export function collectionCardScreen(screen: CollectionCardScreen, page: number)
 // ---------- Тест ----------
 
 const DIRECTION_HINT = { ru_en: "Выберите перевод на английский", en_ru: "Выберите перевод на русский" } as const;
+const TYPED_HINT = { ru_en: "Напишите перевод на английский", en_ru: "Напишите перевод на русский" } as const;
+export const TYPED_FALLBACK_NOTE = "Других вариантов для кнопок не нашлось, поэтому перевод нужно написать сообщением.";
+
+const questionHeader = (question: Pick<AskedQuestion, "isRepeat" | "number" | "total">) =>
+  question.isRepeat ? "Повтор ошибки" : `Вопрос ${question.number} из ${question.total}`;
+
+/** «Переведи меня»: ответ пишется сообщением, под вопросом только пауза. */
+export function typedQuestionScreen(question: AskedQuestion): Screen {
+  const lines = [questionHeader(question), "", `${TYPED_HINT[question.direction]}:`, question.prompt];
+  if (question.typedFallback) lines.push("", TYPED_FALLBACK_NOTE);
+  return { text: fitMessage(lines.join("\n")), keyboard: new InlineKeyboard().text("На паузу", pauseSession(question.sessionId)) };
+}
 
 /**
  * Длинный вариант на кнопке обрезается. Обрезка могла бы сделать варианты неразличимыми, поэтому при любой обрезке
  * кнопки нумеруются, а полный текст всех вариантов идёт в сообщении.
  */
 export function questionScreen(question: AskedQuestion): Screen {
+  if (question.format === "typed") return typedQuestionScreen(question);
   const needsFullText = question.options.some((option) => [...option].length > BUTTON_LABEL_LIMIT);
   const label = (option: string, index: number) =>
     needsFullText ? clip(`${index + 1}. ${option}`, BUTTON_LABEL_LIMIT) : option;
@@ -253,25 +294,61 @@ export function questionScreen(question: AskedQuestion): Screen {
   });
   keyboard.text("На паузу", pauseSession(question.sessionId));
 
-  const header = question.isRepeat ? "Повтор ошибки" : `Вопрос ${question.number} из ${question.total}`;
-  const lines = [header, "", `${DIRECTION_HINT[question.direction]}:`, question.prompt];
+  const lines = [questionHeader(question), "", `${DIRECTION_HINT[question.direction]}:`, question.prompt];
   if (needsFullText) lines.push("", ...question.options.map((option, index) => `${index + 1}. ${option}`));
   return { text: fitMessage(lines.join("\n")), keyboard };
 }
 
-/** Дословно по разделу 5 сценария: «Верно» и пара; «Вы выбрали …; верно …». */
-export function feedbackText(feedback: AnswerFeedback, becameHard = false): string {
-  const pair = pairText(feedback.card);
-  const verdict = feedback.isCorrect ? `Верно: ${pair}` : `Вы выбрали ${feedback.chosen}; верно ${pair}`;
-  const lines = [verdict];
+/** Длинный ввод ученика в ответе бота обрезается: целиком он сохранён в попытке. */
+const TYPED_ECHO_LIMIT = 300;
+
+/**
+ * Кнопки — дословно по разделу 5 сценария: «Верно» и пара; «Вы выбрали …; верно …».
+ * Ввод — по разделу 6: введённый текст, ожидаемый перевод и результат.
+ */
+export function feedbackText(
+  feedback: AnswerFeedback,
+  outcome: { becameHard?: boolean; word?: WordProgress } = {},
+): string {
+  const lines: string[] = [];
+  if (feedback.typed) {
+    lines.push(
+      feedback.isCorrect ? "Верно." : "Неверно.",
+      `Вы написали: ${clip(feedback.chosen, TYPED_ECHO_LIMIT)}`,
+      `Ожидаемый перевод: ${feedback.typed.expected}`,
+      pairText(feedback.card),
+    );
+  } else {
+    const pair = pairText(feedback.card);
+    lines.push(feedback.isCorrect ? `Верно: ${pair}` : `Вы выбрали ${feedback.chosen}; верно ${pair}`);
+  }
   if (feedback.card.example) lines.push("", feedback.card.example);
   if (feedback.card.explanation) lines.push("", feedback.card.explanation);
-  if (becameHard) lines.push("", LEARNING_TEXTS.becameHard);
+  const progress = wordProgressText(outcome);
+  if (progress) lines.push("", progress);
   return fitMessage(lines.join("\n"));
 }
 
+function wordProgressText({ becameHard = false, word }: { becameHard?: boolean; word?: WordProgress }): string | null {
+  if (word?.transition === "returned_to_hard") return LEARNING_TEXTS.returnedToHard;
+  if (becameHard) return LEARNING_TEXTS.becameHard;
+  if (word?.transition === "mastered") return LEARNING_TEXTS.mastered;
+  if (word?.countedInStreak) return `Серия «5 из 5»: ${word.correctStreak} из ${LEARNING_SETTINGS.masteryStreak}.`;
+  if (word?.streakReset) return LEARNING_TEXTS.streakReset;
+  return null;
+}
+
+const RESULT_TITLE = {
+  test: "Тест завершён",
+  translate: "«Переведи меня» завершено",
+  hard_words: "Повторение сложных слов завершено",
+  daily_quest: "Практика завершена",
+  exam: "Экзамен завершён",
+} as const;
+
 export function resultText(result: SessionResult): string {
-  const lines = [result.title ? `Тест завершён: ${result.title}` : "Тест завершён"];
+  const title = RESULT_TITLE[result.type];
+  const lines = [result.title ? `${title}: ${result.title}` : title];
   if (result.answeredCount === 0) {
     lines.push("", "В этом занятии не было вопросов.");
     return fitMessage(lines.join("\n"));
@@ -282,22 +359,94 @@ export function resultText(result: SessionResult): string {
     `После повтора: ${result.afterRepeatCorrect} из ${result.answeredCount}`,
     "",
   );
+  const bullet = (pair: WordPair) => `• ${clip(pairText(pair), LIST_LINE_LIMIT)}`;
+  // Экзамен: отдельно ошибки и пополнение «Сложных слов». Квест: слова для повтора (раздел 9 и 10 сценария).
+  if (result.type === "exam" || result.type === "daily_quest") {
+    if (result.mistakes.length > 0) {
+      lines.push(result.type === "exam" ? "Ошибки:" : "Слова для повтора:", ...result.mistakes.map(bullet), "");
+    } else {
+      lines.push("Ошибок нет.", "");
+    }
+  }
   if (result.becameHard.length > 0) {
-    lines.push("Стали сложными:", ...result.becameHard.map((pair) => `• ${clip(pairText(pair), LIST_LINE_LIMIT)}`));
-  } else {
+    lines.push(result.type === "exam" ? "Пополнили «Сложные слова»:" : "Стали сложными:", ...result.becameHard.map(bullet));
+  } else if (result.type !== "hard_words") {
     lines.push("Новых сложных слов нет.");
+  }
+  if (result.mastered.length > 0) {
+    if (lines.at(-1) !== "") lines.push("");
+    lines.push("Освоены и ушли из «Сложных слов»:", ...result.mastered.map(bullet));
+  }
+  if ((result.type === "hard_words" || result.type === "daily_quest") && result.stillHard.length > 0) {
+    if (lines.at(-1) !== "") lines.push("");
+    lines.push(
+      "Серия «5 из 5»:",
+      ...result.stillHard.map((word) => `${bullet(word)}: ${word.correctStreak} из ${LEARNING_SETTINGS.masteryStreak}`),
+    );
   }
   return fitMessage(lines.join("\n"));
 }
 
-export const resultKeyboard = () => toMenu(new InlineKeyboard());
+export function resultKeyboard(type?: SessionResult["type"]): InlineKeyboard {
+  const keyboard = new InlineKeyboard();
+  if (type === "hard_words") keyboard.text("К сложным словам", hardWordsPage(0)).row();
+  if (type === "daily_quest" || type === "exam") keyboard.text("Мой прогресс", PROGRESS_OPEN).row();
+  return toMenu(keyboard);
+}
 
-export const skippedText = (skipped: readonly WordPair[]) =>
-  fitMessage(
-    skipped
-      .map((pair) => `Слово «${clip(pair.english, 100)}» пока нельзя проверить кнопками: не хватает других вариантов. Пропускаем его.`)
-      .join("\n"),
+// ---------- Сложные слова ----------
+
+const hardLine = (word: HardWord, number: number) =>
+  clip(
+    `${number}. ${word.english} — ${word.translation} (${sourcesText(word.sources)}) · серия ${word.correctStreak} из ${LEARNING_SETTINGS.masteryStreak}`,
+    LIST_LINE_LIMIT,
   );
+
+/** Страница списка сложных слов. Её же бот использует, чтобы найти слова по маске из кнопки. */
+export function hardWordsPageItems(words: readonly HardWord[], requestedPage: number) {
+  const numbered = words.map((word, index) => ({ word, number: index + 1 }));
+  const pages = paginate(numbered, ({ word, number }) => hardLine(word, number));
+  const page = clampPage(requestedPage, pages.length);
+  return { page, pageCount: pages.length, items: pages[page] ?? [] };
+}
+
+/** Слова страницы, отмеченные в маске. */
+export function selectedHardWords(words: readonly HardWord[], page: number, mask: number): HardWord[] {
+  const { page: actual, items } = hardWordsPageItems(words, page);
+  if (actual !== page) return [];
+  return items.filter((_, index) => (mask & (1 << index)) !== 0).map(({ word }) => word);
+}
+
+export function hardWordsScreen(screen: HardWordsScreen, requestedPage: number, requestedMask: number): Screen {
+  const keyboard = new InlineKeyboard();
+  if (screen.openSessionId !== null) keyboard.text("Продолжить повторение", resumeSession(screen.openSessionId)).row();
+  if (screen.words.length === 0) return { text: LEARNING_TEXTS.noHardWords, keyboard: toMenu(keyboard) };
+
+  const { page, pageCount, items } = hardWordsPageItems(screen.words, requestedPage);
+  // Маска относится к странице, на которой её отметили.
+  const mask = page === requestedPage ? requestedMask & ((1 << items.length) - 1) : 0;
+  const selected = items.filter((_, index) => (mask & (1 << index)) !== 0).length;
+
+  keyboard.text(`Повторить все (${screen.words.length})`, START_HARD_ALL).row();
+  items.forEach(({ word, number }, index) => {
+    const isSelected = (mask & (1 << index)) !== 0;
+    keyboard.text(clip(`${isSelected ? "✓ " : ""}${number}. ${word.english}`, BUTTON_LABEL_LIMIT), hardWordsPage(page, mask ^ (1 << index)));
+    if (index % 2 === 1 || index === items.length - 1) keyboard.row();
+  });
+  if (selected > 0) keyboard.text(`Повторить выбранные (${selected})`, startHardSelected(page, mask)).row();
+  navigationRow(keyboard, page, pageCount, (target) => hardWordsPage(target));
+  toMenu(keyboard);
+
+  const lines = [
+    `Сложные слова: ${screen.words.length}.`,
+    `Слово уходит из списка после ${LEARNING_SETTINGS.masteryStreak} верных ответов подряд с первой попытки в разных занятиях.`,
+    "",
+    ...items.map(({ word, number }) => hardLine(word, number)),
+    "",
+    "Чтобы повторить только часть слов, отметьте их кнопками.",
+  ];
+  return { text: fitMessage(lines.join("\n")), keyboard };
+}
 
 export function staleScreen(stale: {
   sessionId: number;

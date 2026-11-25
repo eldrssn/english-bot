@@ -8,7 +8,6 @@ import {
 } from "../../src/bot/learning-render.js";
 import {
   COLLECTION_CARD_PATTERN,
-  MENU,
   WORD_CARD_PATTERN,
   collectionCard,
   collectionFromNotification,
@@ -23,7 +22,7 @@ import { issueCollectionCopy, upsertStudentWord } from "../../src/db/collections
 import { attempts, cardVersions, cardViews, questions, sessions, sourceCollections, studentCards, studentCollections, studentLinks, studentWords } from "../../src/db/schema.js";
 import { normalizeWordText } from "../../src/domain/index.js";
 import { openTestDb, resetDb } from "../helpers/db.js";
-import { callbackUpdate, createFakeBot, lastButtons, sentTexts } from "../helpers/fake-telegram.js";
+import { callbackUpdate, createFakeBot, lastButtons, sentTexts, textUpdate } from "../helpers/fake-telegram.js";
 import {
   answer,
   answerButtons,
@@ -350,7 +349,10 @@ describe("правка карточки во время занятия", () => {
     const wrong = buttons.find((button) => Number(button.callback_data.split(":")[3]) !== asked.question.correctOptionIndex)!;
     await fake.bot.handleUpdate(callbackUpdate(STUDENT, wrong.callback_data));
     const feedback = fake.calls.filter((call) => call.method === "editMessageText").at(-1)!.payload.text;
-    expect(feedback).toBe(`Вы выбрали ${wrong.text}; верно ${asked.version.english} — ${asked.version.primaryTranslation}`);
+    // Слово было сложным с серией 3: ошибка обнуляет серию, и бот говорит об этом.
+    expect(feedback).toBe(
+      `Вы выбрали ${wrong.text}; верно ${asked.version.english} — ${asked.version.primaryTranslation}\n\nСерия «5 из 5» начинается заново.`,
+    );
     expect(feedback).not.toContain("Новая версия");
     const [attempt] = await db.select().from(attempts);
     expect((await db.select().from(questions).where(eq(questions.id, attempt!.questionId)))[0]?.cardVersionId).toBe(asked.version.id);
@@ -505,20 +507,26 @@ describe("удаление карточки", () => {
 });
 
 describe("подборка с 1–3 словами и нехватка вариантов", () => {
-  it("одно слово и нет других: сообщает, что нельзя проверить кнопками, пропускает, не падает", async () => {
+  it("одно слово и нет других: вместо кнопок бот просит написать перевод, ответ засчитывается", async () => {
     const { link } = await connectStudent(db, STUDENT);
     const id = await issue(db, link.id, "Одно", [card("alone", "один")]);
     const fake = createFakeBot(db);
     await fake.bot.handleUpdate(callbackUpdate(STUDENT, startTest(id)));
-    const texts = sentTexts(fake.calls);
-    expect(texts.at(-2)).toContain("Слово «alone» пока нельзя проверить кнопками");
-    expect(texts.at(-1)).toContain("В этом занятии не было вопросов");
-    const session = (await db.select().from(sessions))[0]!;
-    expect(session.status).toBe("completed");
-    expect(session.learningState!.removedPositions).toEqual([0]);
-    expect(await db.select().from(questions)).toHaveLength(0);
-    expect(await db.select().from(attempts)).toHaveLength(0);
-    expect(lastButtons(fake.calls).map((button) => button.callback_data)).toEqual([MENU]);
+    const prompt = sentTexts(fake.calls).at(-1)!;
+    expect(prompt).toContain("Вопрос 1 из 1");
+    expect(prompt).toMatch(/Напишите перевод на (английский|русский)/);
+    expect(prompt).toContain("Других вариантов для кнопок не нашлось");
+    expect(answerButtons(fake.calls)).toHaveLength(0);
+    const [question] = await db.select().from(questions);
+    expect(question).toMatchObject({ format: "typed", options: null, correctOptionIndex: null });
+    // План теста остаётся планом кнопок: ввод — замена только для этого слова.
+    expect((await db.select().from(sessions))[0]!.learningState!.plan[0]!.format).toBe("choice");
+
+    await fake.bot.handleUpdate(textUpdate(STUDENT, question!.direction === "ru_en" ? "Alone" : "один"));
+    expect(sentTexts(fake.calls).at(-2)).toContain("Верно.");
+    expect(sentTexts(fake.calls).at(-1)).toContain("С первой попытки: 1 из 1");
+    expect((await db.select().from(sessions))[0]!.status).toBe("completed");
+    expect(await db.select().from(attempts)).toHaveLength(1);
   });
 
   it.each([
@@ -543,16 +551,21 @@ describe("подборка с 1–3 словами и нехватка вари�
     expect(answerButtons(fake.calls)).toHaveLength(4);
   });
 
-  it("слово без вариантов пропускается, а остальное занятие идёт", async () => {
+  it("слово без вариантов спрашивается вводом, а остальное занятие идёт кнопками", async () => {
     const { link } = await connectStudent(db, STUDENT);
-    // У синонимов нет ни одного неверного варианта для quick: все тексты для него допустимы.
+    // У синонимов нет ни одного неверного варианта: все тексты допустимы для обоих слов.
     const id = await issue(db, link.id, "Подборка", [
       card("fast", "быстрый", { acceptedRuEn: ["quick"], acceptedEnRu: ["скорый"] }),
       card("quick", "скорый", { acceptedRuEn: ["fast"], acceptedEnRu: ["быстрый"] }),
     ]);
     const fake = createFakeBot(db);
     await fake.bot.handleUpdate(callbackUpdate(STUDENT, startTest(id)));
-    expect(sentTexts(fake.calls).join("\n")).toContain("пока нельзя проверить кнопками");
+    for (let guard = 0; guard < 2; guard++) {
+      const [question] = await db.select().from(questions).where(eq(questions.status, "open"));
+      expect(question?.format).toBe("typed");
+      await fake.bot.handleUpdate(textUpdate(STUDENT, question!.direction === "ru_en" ? "fast" : "скорый"));
+    }
+    expect(sentTexts(fake.calls).at(-1)).toContain("С первой попытки: 2 из 2");
     expect((await db.select().from(sessions))[0]?.status).toBe("completed");
   });
 

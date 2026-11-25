@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import { formatDateTime } from "../lib/format";
+import { COLLECTION_STATUS_LABEL, formatDateTime, scoreText, sessionTitle } from "../lib/format";
 import { Link } from "../lib/router";
 import { useQuery } from "../lib/useQuery";
 import { ErrorState, Loading, PageTitle, TelegramIdentity } from "../ui/kit";
@@ -62,6 +62,53 @@ export function Dashboard() {
                     >
                       Проверить заявку
                     </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="section" aria-labelledby="recent-results-heading">
+            <h2 id="recent-results-heading">Последние результаты</h2>
+            {data.recentResults.length === 0 ? (
+              <p className="muted">Завершённых занятий пока нет. Когда ученик пройдёт тест, квест или экзамен, итог появится здесь.</p>
+            ) : (
+              <ul className="request-list">
+                {data.recentResults.map((result) => (
+                  <li key={result.sessionId} className="request-row">
+                    <div className="request-row-main">
+                      <span className="strong">{result.displayName}</span>
+                      <span>
+                        {sessionTitle(result.type, result.title)} — с первой попытки {scoreText(result.firstAttempt)}
+                      </span>
+                      <span className="muted small">{formatDateTime(result.finishedAt)}</span>
+                    </div>
+                    <Link className="btn" href={`/students/${result.studentId}/results`} aria-label={`Результаты: ${result.displayName}`}>
+                      Результаты
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="section" aria-labelledby="recent-collections-heading">
+            <h2 id="recent-collections-heading">Недавно выданные подборки</h2>
+            {data.recentCollections.length === 0 ? (
+              <p className="muted">
+                Подборки ещё не выдавались. Создайте подборку в разделе <Link href="/collections">«Подборки»</Link> и выдайте её ученикам.
+              </p>
+            ) : (
+              <ul className="collection-list">
+                {data.recentCollections.map((copy) => (
+                  <li key={copy.copyId} className="collection-row">
+                    <Link className="strong" href={`/copies/${copy.copyId}`}>
+                      {copy.title}
+                    </Link>
+                    <span className="muted small">
+                      {copy.displayName}, выдана {formatDateTime(copy.publishedAt)}
+                    </span>
+                    <span className="badge badge-neutral">{COLLECTION_STATUS_LABEL[copy.status]}</span>
                   </li>
                 ))}
               </ul>

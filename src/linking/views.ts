@@ -5,6 +5,7 @@ import type { Db } from "../db/client.js";
 import { invitations, sessions, studentCards, studentCollections, studentLinks, users } from "../db/schema.js";
 import { expireStale } from "./locks.js";
 import { MAX_CODE_ATTEMPTS, personName } from "./service.js";
+import { recentActivity } from "../results/student-results.js";
 
 type LinkWithStudent = {
   link: typeof studentLinks.$inferSelect;
@@ -95,7 +96,9 @@ export async function getDashboard(db: Db, teacherUserId: number) {
   await expireStale(db, { teacherUserId });
   const rows = await selectOwnLinks(db, teacherUserId);
   const live = await liveInvitations(db, rows.map((row) => row.link.id));
+  const recent = await recentActivity(db, rows.map((row) => row.link));
   return {
+    ...recent,
     studentCount: rows.length,
     activeStudentCount: rows.filter((row) => row.link.status === "active").length,
     pendingRequests: rows.flatMap((row) => {

@@ -1,11 +1,29 @@
-// Публичный API логики обучения этапа 3.
-export { checkAnswer, type AnswerCheck } from "./answer-check.js";
+// Публичный API логики обучения этапов 3, 5 и 6.
+export { checkAnswer, isBlankAnswer, type AnswerCheck } from "./answer-check.js";
 export { buildChoiceOptions, type ChoiceOptions, type ChoiceOptionsInput } from "./choice-options.js";
 export {
   computeCollectionStatus,
   type CollectionCardProgress,
   type CollectionStatus,
 } from "./collection-status.js";
+export { buildExamPlan, selectExamWords, type ExamCandidate, type ExamOptions } from "./exam.js";
+export { addDays, formatClock, isValidTimeZone, localDate, localMinutes, parseClock, utcOffsetLabel } from "./local-time.js";
+export {
+  buildQuestPlan,
+  isQuestStale,
+  questStreak,
+  selectQuestWords,
+  type QuestCandidate,
+  type QuestOptions,
+  type QuestSettings,
+} from "./quest.js";
+export {
+  reminderDecision,
+  selectReminderRecipients,
+  type ReminderCandidate,
+  type ReminderDecision,
+  type ReminderSkipReason,
+} from "./reminders.js";
 export { createSeededRng, type Rng } from "./rng.js";
 export {
   buildSessionPlan,
@@ -17,6 +35,7 @@ export {
   type BuildPlanOptions,
   type DirectionMode,
   type ItemAnswers,
+  type PlanFormat,
   type PlanItem,
   type PlanWord,
   type RecordAnswerInput,
@@ -27,6 +46,7 @@ export {
 } from "./session.js";
 export { LEARNING_SETTINGS, type LearningSettings } from "./settings.js";
 export {
+  oppositeDirection,
   primaryAnswerText,
   promptText,
   type AnswerCard,

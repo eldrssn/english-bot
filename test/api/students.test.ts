@@ -96,7 +96,13 @@ describe("условие готовности этапа 2: один препо�
 
     // Другой преподаватель ничего не видит.
     expect((await b.get(apiRoutes.listStudents.path)).json().students).toEqual([]);
-    expect(dashboardResponse.parse((await b.get(apiRoutes.dashboard.path)).json())).toEqual({ studentCount: 0, activeStudentCount: 0, pendingRequests: [] });
+    expect(dashboardResponse.parse((await b.get(apiRoutes.dashboard.path)).json())).toEqual({
+      studentCount: 0,
+      activeStudentCount: 0,
+      pendingRequests: [],
+      recentCollections: [],
+      recentResults: [],
+    });
     expect((await b.send("POST", studentPath(created.id, "/request/approve"), { code })).statusCode).toBe(404);
 
     // Неверный код: попытка засчитана.
@@ -555,6 +561,39 @@ describe("перебор всех маршрутов API", () => {
     const created = await createStudent(a);
     expect((await b.send("PATCH", studentPath(created.id), { displayName: "" })).statusCode).toBe(404);
     expect((await b.send("POST", studentPath(created.id, "/request/approve"), { code: "x" })).statusCode).toBe(404);
+  });
+
+  it("каждый непубличный маршрут объявлен через единую проверку: роль преподавателя и право на объект :id", () => {
+    const objectAccess: string[] = ["own-student", "own-collection", "own-source-card", "own-copy", "own-copy-card"];
+    for (const route of contractRoutes) {
+      const label = `${route.method} ${route.path}`;
+      if (route.access === "public") expect(route.path, label).toMatch(/^\/api\/auth\//);
+      else if (route.access === "teacher") expect(route.path, label).not.toContain(":id");
+      else {
+        expect(objectAccess, label).toContain(route.access);
+        expect(route.path, label).toContain(":id");
+      }
+    }
+    // Маршруты этапа 7 тоже идут через проверку права на запись ученика и подборку.
+    expect(apiRoutes.studentResults.access).toBe("own-student");
+    expect(apiRoutes.studentResultsCsv.access).toBe("own-student");
+    expect(apiRoutes.collectionResults.access).toBe("own-collection");
+  });
+
+  it("на каждом GET преподавателя без :id чужие данные не видны: перебор по контракту", async () => {
+    const { app, a, b } = await twoTeachers();
+    await app.ready();
+    await materialsOf(a);
+    const routes = contractRoutes.filter((route) => route.access === "teacher" && route.method === "GET");
+    expect(routes.length).toBeGreaterThanOrEqual(3);
+    // Проверка не пустая: у самого А эти данные видны (главная показывает выданную «Тайную подборку»).
+    expect((await a.get(apiRoutes.dashboard.path)).body).toMatch(/Тайн/);
+    expect((await a.get(apiRoutes.listCollections.path)).body).toMatch(/Тайн/);
+    for (const route of routes) {
+      const response = await b.get(route.path);
+      expect(response.statusCode, route.path).toBe(200);
+      expect(response.body, route.path).not.toMatch(/Тайн|secret/);
+    }
   });
 
   it("у маршрутов без :id данные только свои", async () => {

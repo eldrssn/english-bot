@@ -3,9 +3,11 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { loadFixtureCollections } from "../../src/db/fixtures.js";
 import { issueFixtureCollection } from "../../src/learning/issue.js";
+import { createLearningService } from "../../src/learning/service.js";
 import {
   attempts,
   cardViews,
+  notifications,
   sessions,
   sourceCards,
   sourceCollections,
@@ -15,6 +17,8 @@ import {
   users,
 } from "../../src/db/schema.js";
 import { PrepareStudentError, prepareDevStudent } from "../../src/dev/prepare-student.js";
+import { createSeededRng } from "../../src/domain/learning/index.js";
+import { runReminderTick } from "../../src/notifications/reminders.js";
 import { openTestDb, resetDb } from "../helpers/db.js";
 import { TEST_APP_SECRET } from "../helpers/fake-telegram.js";
 import { createFakeBot } from "../helpers/fake-telegram.js";
@@ -108,6 +112,51 @@ describe("dev:prepare-student", () => {
     expect(words.every((w) => w.status === "learning" && w.correctStreak === 0 && w.lastCountedSessionId === null)).toBe(true);
     const collections = await db.select().from(studentCollections);
     expect(collections.every((c) => c.status === "assigned")).toBe(true);
+  });
+
+  it("--hard отмечает слова сложными после сброса: они в списке «Сложные слова», у первого серия 4 из 5", async () => {
+    await prepare();
+    await practice();
+    const result = await prepare({ resetProgress: true, hardWords: 3 });
+    expect(result.hardWords).toHaveLength(3);
+    expect(result.hardWords.map((word) => word.correctStreak)).toEqual([4, 0, 0]);
+    const id = await studentId();
+    const hard = await db.select().from(studentWords).where(eq(studentWords.studentUserId, id));
+    expect(hard.filter((word) => word.status === "hard")).toHaveLength(3);
+    const screen = await createLearningService(db).openHardWords(id);
+    expect(screen.words.map((word) => word.english)).toEqual(result.hardWords.map((word) => word.english));
+    // Повторный запуск добавляет следующие слова, а не переписывает уже сложные.
+    const again = await prepare({ hardWords: 1 });
+    expect(result.hardWords.map((word) => word.english)).not.toContain(again.hardWords[0]!.english);
+  });
+
+  it("--tz задаёт часовой пояс, неизвестный пояс — отказ без изменений", async () => {
+    expect((await prepare({ timezone: "Asia/Yekaterinburg" })).timezone).toBe("Asia/Yekaterinburg");
+    await expect(prepare({ timezone: "Mars/Olympus" })).rejects.toBeInstanceOf(PrepareStudentError);
+    expect((await db.select().from(users).where(eq(users.telegramId, STUDENT)))[0]!.timezone).toBe("Asia/Yekaterinburg");
+  });
+
+  it("--remind: время — текущая минута по поясу, планировщик сразу создаёт квест и одно напоминание; повтор команды шлёт его снова", async () => {
+    const now = new Date("2026-11-24T10:17:30Z");
+    const result = await prepare({ remindNow: true, now });
+    expect(result.timezone).toBe("Europe/Moscow");
+    expect(result.reminder).toEqual({ reminderTime: "13:17", localDate: "2026-11-24", questCompletedToday: false });
+    const user = (await db.select().from(users).where(eq(users.telegramId, STUDENT)))[0]!;
+    expect(user).toMatchObject({ reminderTime: "13:17:00", remindersEnabled: true, botBlockedAt: null });
+
+    const tick = () => runReminderTick(db, { now, rng: createSeededRng(1) });
+    expect(await tick()).toMatchObject({ reminded: 1, questsCreated: 1 });
+    expect(await tick()).toMatchObject({ reminded: 0, questsCreated: 0 });
+    await prepare({ remindNow: true, now });
+    expect(await tick()).toMatchObject({ reminded: 1, questsCreated: 0 });
+    const reminders = await db.select().from(notifications).where(eq(notifications.reason, "daily_reminder"));
+    expect(reminders).toHaveLength(1);
+    expect(await db.select().from(sessions).where(eq(sessions.type, "daily_quest"))).toHaveLength(1);
+
+    // --reset удаляет квест и его напоминание.
+    await prepare({ resetProgress: true });
+    expect(await db.select().from(notifications).where(eq(notifications.reason, "daily_reminder"))).toHaveLength(0);
+    expect(await db.select().from(sessions)).toHaveLength(0);
   });
 
   it("без --reset прогресс не трогается", async () => {

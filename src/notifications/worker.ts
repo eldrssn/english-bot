@@ -6,6 +6,7 @@ import type { Db } from "../db/client.js";
 import { notifications, users } from "../db/schema.js";
 import { expireStale } from "../linking/locks.js";
 import { notificationKeyboard, renderNotification } from "./render.js";
+import { appLogger, type Logger } from "../logger.js";
 
 export const MAX_MESSAGES_PER_SECOND = 25;
 export const MAX_DELIVERY_ATTEMPTS = 8;
@@ -137,11 +138,12 @@ export async function deliverDueNotifications(db: Db, api: Api, options: Deliver
   return report;
 }
 
-export type WorkerOptions = { tickMs?: number; sweepEveryMs?: number };
+export type WorkerOptions = { tickMs?: number; sweepEveryMs?: number; logger?: Logger };
 
 /** Фоновый цикл: отправка очереди раз в секунду и закрытие просроченных ссылок и заявок раз в минуту. */
 export function startNotificationWorker(db: Db, api: Api, options: WorkerOptions = {}) {
   const { tickMs = 1000, sweepEveryMs = 60_000 } = options;
+  const logger = (options.logger ?? appLogger).child({ component: "notifications" });
   let stopped = false;
   let timer: NodeJS.Timeout | undefined;
   let lastSweep = 0;
@@ -156,8 +158,11 @@ export function startNotificationWorker(db: Db, api: Api, options: WorkerOptions
       }
       const report = await deliverDueNotifications(db, api);
       waitMs = Math.max(tickMs, report.pauseMs);
+      if (report.failed > 0 || report.blocked > 0) {
+        logger.warn({ failed: report.failed, blocked: report.blocked, retried: report.retried }, "Часть уведомлений не доставлена");
+      }
     } catch (error) {
-      console.error("Ошибка обработчика уведомлений:", error);
+      logger.error({ err: error }, "Ошибка обработчика уведомлений");
     }
     if (!stopped) {
       timer = setTimeout(() => {

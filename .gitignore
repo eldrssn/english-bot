@@ -9,3 +9,6 @@ coverage/
 
 # Локальный кластер PostgreSQL (scripts/pg-local.sh)
 .pgdata/
+
+# Резервные копии базы (scripts/db-backup.sh): содержат персональные данные учеников.
+backups/

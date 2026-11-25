@@ -2,6 +2,7 @@
 // к Telegram запросов нет, токен не нужен. В production не запускается.
 import { ConfigError, loadWebConfig } from "../src/config.js";
 import { createDb } from "../src/db/client.js";
+import { createLogger, logLevelFromEnv } from "../src/logger.js";
 import { buildServer } from "../src/server/index.js";
 
 try {
@@ -10,7 +11,7 @@ try {
   const { db } = createDb(databaseUrl);
   const server = buildServer({
     db,
-    logger: { level: "info" },
+    logger: createLogger({ level: logLevelFromEnv(process.env.LOG_LEVEL) }),
     webDistDir: web.webDistDir,
     api: {
       appSecret: web.appSecret,

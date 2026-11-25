@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { makeWordKey, sameWord } from "../../../src/domain/index.js";
-import { checkAnswer, type Direction } from "../../../src/domain/learning/index.js";
+import { checkAnswer, isBlankAnswer, type Direction } from "../../../src/domain/learning/index.js";
 import { card, fixtureCards } from "./fixtures.js";
 
 type AnswerRow = {
@@ -64,5 +64,15 @@ describe("checkAnswer: несколько карточек одного слов
     const odd = card("go", "идти", { acceptedRuEn: ["?!"] });
     expect(checkAnswer([odd], "ru_en", "!!").isCorrect).toBe(false);
     expect(checkAnswer([odd], "ru_en", "").isCorrect).toBe(false);
+  });
+});
+
+describe("isBlankAnswer: текст без слов попыткой не считается", () => {
+  it.each(["", "   ", "?!", "...", "👍", "—", "\u200b"])("«%s» пустой", (input) => {
+    expect(isBlankAnswer(input)).toBe(true);
+  });
+
+  it.each(["to", "0", "a", "е", "не"])("«%s» — ответ", (input) => {
+    expect(isBlankAnswer(input)).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import { ConfirmDialog } from "../ui/Dialog";
 import { ErrorState, Loading, PageTitle, QueryError, StatusBadge, TelegramIdentity, TextField } from "../ui/kit";
 import { LinkSection } from "./LinkSection";
 import { useFlash } from "./Shell";
+import { resultsCsvUrl } from "./StudentResults";
 
 function RenameForm({ student, onDone }: { student: StudentDetail; onDone: (detail?: StudentDetail) => void }) {
   const [name, setName] = useState(student.displayName);
@@ -225,6 +226,23 @@ export function StudentCard({ id }: { id: number }) {
                 ))}
               </ul>
             )}
+          </section>
+
+          <section className="section" aria-labelledby="results-heading">
+            <h2 id="results-heading">Результаты</h2>
+            <p className="muted">
+              {student.status === "active"
+                ? "Занятия, ответы с первой попытки и после повтора, сложные и освоенные слова, квесты и экзамены — только за время текущей связи."
+                : "Ученик ещё не подключён: результаты появятся, когда он начнёт заниматься."}
+            </p>
+            <div className="actions">
+              <Link className="btn btn-primary" href={`/students/${student.id}/results`}>
+                Открыть результаты
+              </Link>
+              <a className="btn" href={resultsCsvUrl(student.id)} download>
+                Скачать CSV
+              </a>
+            </div>
           </section>
 
           <UnlinkSection student={student} />

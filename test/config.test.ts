@@ -9,6 +9,8 @@ const production = {
   WEB_BASE_URL: "https://cabinet.example",
   TELEGRAM_LOGIN_CLIENT_ID: "id",
   TELEGRAM_LOGIN_CLIENT_SECRET: "secret",
+  BOT_MODE: "webhook",
+  WEBHOOK_SECRET: "w".repeat(32),
 };
 
 describe("настройки окружения", () => {
@@ -66,6 +68,28 @@ describe("настройки окружения", () => {
     expect(loadConfig(production).web.isProduction).toBe(true);
     expect(() => loadConfig({ ...production, DEV_LOGIN_TELEGRAM_ID: "42" })).toThrow(/DEV_LOGIN_TELEGRAM_ID/);
     expect(() => loadWebConfig({ ...production, DEV_LOGIN_TELEGRAM_ID: "42" })).toThrow(/DEV_LOGIN_TELEGRAM_ID/);
+  });
+
+  it("production работает только через webhook с секретом; адрес webhook по умолчанию — адрес кабинета", () => {
+    expect(loadConfig(production)).toMatchObject({
+      botMode: "webhook",
+      host: "0.0.0.0",
+      webhook: { baseUrl: "https://cabinet.example", secret: "w".repeat(32) },
+    });
+    expect(() => loadConfig({ ...production, BOT_MODE: "polling" })).toThrow(/BOT_MODE: при NODE_ENV=production нужен webhook/);
+    const { WEBHOOK_SECRET: _secret, ...withoutSecret } = production;
+    expect(() => loadConfig(withoutSecret)).toThrow(/WEBHOOK_SECRET/);
+    expect(loadConfig({ ...production, WEBHOOK_BASE_URL: "https://hook.example" }).webhook?.baseUrl).toBe("https://hook.example");
+    // Кабинет без production и без https: адрес webhook нужно задать явно.
+    expect(() => loadConfig({ ...base, BOT_MODE: "webhook", WEB_BASE_URL: "http://localhost:3000", WEBHOOK_SECRET: "a".repeat(32) })).toThrow(
+      /WEBHOOK_BASE_URL/,
+    );
+  });
+
+  it("LOG_LEVEL: по умолчанию info, неизвестный уровень отклоняется", () => {
+    expect(loadConfig(base).logLevel).toBe("info");
+    expect(loadConfig({ ...base, LOG_LEVEL: "debug" }).logLevel).toBe("debug");
+    expect(() => loadConfig({ ...base, LOG_LEVEL: "verbose" })).toThrow(/LOG_LEVEL/);
   });
 
   it("production требует настоящий вход и https", () => {

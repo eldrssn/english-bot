@@ -1,10 +1,10 @@
 import { InlineKeyboard } from "grammy";
-import { collectionFromNotification } from "../bot/callback-data.js";
+import { DAILY_START, collectionFromNotification, timezoneList } from "../bot/callback-data.js";
 import type { NotificationReason } from "./queue.js";
 
 const text = (value: unknown): string | null => (typeof value === "string" && value !== "" ? value : null);
 
-/** Текст уведомления. null: причина появится на следующих этапах, сообщения для неё пока нет. */
+/** Текст уведомления. null: для причины нет сообщения (запись помечается неотправленной). */
 export function renderNotification(reason: NotificationReason, payload: Record<string, unknown>): string | null {
   switch (reason) {
     case "join_request": {
@@ -23,7 +23,11 @@ export function renderNotification(reason: NotificationReason, payload: Record<s
         "Ученик перешёл по другой ссылке. При необходимости создайте новую в кабинете."
       );
     case "link_confirmed":
-      return "Преподаватель подтвердил подключение. Материалы открыты. Нажмите /start, чтобы продолжить.";
+      return (
+        "Преподаватель подтвердил подключение. Материалы открыты. " +
+        "Выберите часовой пояс: по нему приходят напоминания о ежедневной практике. " +
+        "Меню откроется по команде /start."
+      );
     case "link_ended":
       return (
         "Преподаватель больше не ведёт ваши занятия. Ваш прогресс и полученные материалы сохраняются, " +
@@ -42,12 +46,16 @@ export function renderNotification(reason: NotificationReason, payload: Record<s
         "Посмотрите их и продолжите практику."
       );
     case "daily_reminder":
-      return null;
+      // Дословно по разделу 9 сценария.
+      return "Сегодня короткая практика: повторить сложные слова и проверить новые.";
   }
 }
 
 /** Кнопки уведомления. undefined: уведомление только с текстом. */
 export function notificationKeyboard(reason: NotificationReason, payload: Record<string, unknown>): InlineKeyboard | undefined {
+  // «Начать» ведёт к сегодняшнему квесту: если он уже открыт — к продолжению, второго не создаёт.
+  if (reason === "daily_reminder") return new InlineKeyboard().text("Начать", DAILY_START);
+  if (reason === "link_confirmed") return new InlineKeyboard().text("Выбрать часовой пояс", timezoneList(0));
   if (reason !== "new_collection" && reason !== "collection_extended") return undefined;
   const collectionId = Number(payload.studentCollectionId);
   if (!Number.isSafeInteger(collectionId) || collectionId <= 0) return undefined;

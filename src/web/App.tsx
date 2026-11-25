@@ -12,6 +12,8 @@ import { SourceCardEdit, SourceCardNew } from "./screens/SourceCard";
 import { ImportScreen } from "./screens/Import";
 import { IssueScreen } from "./screens/Issue";
 import { CopyAdd, CopyCardEdit, CopyScreen } from "./screens/Copy";
+import { StudentResultsScreen } from "./screens/StudentResults";
+import { CollectionResultsScreen } from "./screens/CollectionResults";
 import { ErrorState, Loading, PageTitle } from "./ui/kit";
 import { Link } from "./lib/router";
 
@@ -32,18 +34,21 @@ function Screen() {
   if (path === "/") return <Dashboard />;
   if (path === "/students") return <Students />;
   if (path === "/students/new") return <StudentNew />;
-  const match = /^\/students\/(\d{1,15})(\/request)?$/.exec(path);
+  const match = /^\/students\/(\d{1,15})(?:\/(request|results))?$/.exec(path);
   if (match) {
     const id = Number(match[1]);
-    return match[2] ? <RequestScreen key={id} id={id} /> : <StudentCard key={id} id={id} />;
+    if (match[2] === "request") return <RequestScreen key={id} id={id} />;
+    if (match[2] === "results") return <StudentResultsScreen key={id} id={id} />;
+    return <StudentCard key={id} id={id} />;
   }
   if (path === "/collections") return <Collections />;
   if (path === "/collections/new") return <CollectionNew />;
-  const collection = /^\/collections\/(\d{1,15})(?:\/(cards\/new|cards\/(\d{1,15})|import|issue))?$/.exec(path);
+  const collection = /^\/collections\/(\d{1,15})(?:\/(cards\/new|cards\/(\d{1,15})|import|issue|results))?$/.exec(path);
   if (collection) {
     const id = Number(collection[1]);
     const sub = collection[2];
     if (sub === undefined) return <CollectionScreen key={id} id={id} />;
+    if (sub === "results") return <CollectionResultsScreen key={id} id={id} />;
     if (sub === "cards/new") return <SourceCardNew key={id} collectionId={id} />;
     if (sub === "import") return <ImportScreen key={id} collectionId={id} />;
     if (sub === "issue") return <IssueScreen key={id} collectionId={id} />;

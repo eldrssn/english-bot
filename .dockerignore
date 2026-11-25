@@ -1,0 +1,19 @@
+# В образ попадает только то, что нужно для сборки. Секреты и локальные данные — никогда.
+.git
+.env
+.env.*
+!.env.example
+.pgdata
+node_modules
+dist
+coverage
+graphify-out
+test
+e2e
+*.docx
+*.md
+.claude
+playwright.config.ts
+vitest*.config.ts
+docker-compose.yml
+backups

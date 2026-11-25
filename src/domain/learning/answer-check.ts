@@ -29,3 +29,11 @@ function matchesCard(card: AnswerCard, direction: Direction, input: string): boo
     direction === "ru_en" ? [card.english, ...card.acceptedRuEn] : [card.primaryTranslation, ...card.acceptedEnRu];
   return variants.some((variant) => normalizeAnswerText(variant, { allowOmitTo }) === answer);
 }
+
+/**
+ * Ответ без единой буквы или цифры: смайлик, знаки препинания, пустая строка. Такой текст не считается попыткой,
+ * бот просит написать перевод словами. Пропуск `to` не учитывается: одиночное «to» — это ответ.
+ */
+export function isBlankAnswer(input: string): boolean {
+  return normalizeAnswerText(input) === "";
+}

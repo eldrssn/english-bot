@@ -1273,3 +1273,45 @@ a {
     display: none;
   }
 }
+
+/* ---------- Результаты ---------- */
+
+/* Широкая таблица прокручивается внутри своей области, страница остаётся без прокрутки вбок. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius);
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.table-scroll > .data-table {
+  min-width: 560px;
+}
+
+.stat-of {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.stat dd.stat-text {
+  font-size: 17px;
+}
+
+.answer-ok {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.answer-wrong {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.field-inline {
+  max-width: 420px;
+}

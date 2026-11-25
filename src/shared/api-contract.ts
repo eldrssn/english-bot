@@ -12,6 +12,14 @@ export const CSRF_HEADER = "x-csrf-token";
 
 const timestamp = z.iso.datetime();
 
+/** Сколько верно из скольких. */
+export const score = z.object({ correct: z.number().int().min(0), total: z.number().int().min(0) });
+export type Score = z.infer<typeof score>;
+
+/** Вид занятия: тест, «Переведи меня», практика сложных слов, ежедневный квест, экзамен. */
+export const sessionKind = z.enum(["test", "translate", "hard_words", "daily_quest", "exam"]);
+export type SessionKind = z.infer<typeof sessionKind>;
+
 // ---------- Ошибки ----------
 
 export const apiErrorCodes = [
@@ -154,6 +162,29 @@ export const dashboardResponse = z.object({
       telegramUsername: z.string().nullable(),
       requestedAt: timestamp,
       expiresAt: timestamp,
+    }),
+  ),
+  /** Недавно выданные подборки текущих учеников, до 5. */
+  recentCollections: z.array(
+    z.object({
+      copyId: z.number().int(),
+      studentId: z.number().int(),
+      displayName: z.string(),
+      title: z.string(),
+      publishedAt: timestamp,
+      status: z.enum(["assigned", "started", "practicing", "completed"]),
+    }),
+  ),
+  /** Последние завершённые занятия учеников в рамках текущих связей, до 5. */
+  recentResults: z.array(
+    z.object({
+      studentId: z.number().int(),
+      displayName: z.string(),
+      sessionId: z.number().int(),
+      type: sessionKind,
+      title: z.string().nullable(),
+      finishedAt: timestamp,
+      firstAttempt: score,
     }),
   ),
 });
@@ -387,6 +418,170 @@ export const addCopyCardsResponse = z.object({
 });
 export type AddCopyCardsResponse = z.infer<typeof addCopyCardsResponse>;
 
+// ---------- Результаты ----------
+//
+// Результаты строятся из сохранённых попыток, просмотров и занятий, а не из истории сообщений Telegram,
+// и только в рамках текущей связи: попытки, просмотры и занятия хранят ссылку на связь (student_link_id).
+// Прежние связи с тем же учеником здесь не видны, даже если ученик вернулся к тому же преподавателю.
+
+export const wordState = z.enum(["learning", "hard", "mastered"]);
+export type WordState = z.infer<typeof wordState>;
+
+const collectionStatus = z.enum(["assigned", "started", "practicing", "completed"]);
+
+export const resultSession = z.object({
+  id: z.number().int(),
+  type: sessionKind,
+  /** Подборка теста или «Переведи меня»; null у практики, квеста и экзамена. */
+  title: z.string().nullable(),
+  status: z.enum(["current", "paused", "completed", "incomplete"]),
+  startedAt: timestamp,
+  finishedAt: timestamp.nullable(),
+  /** Локальная дата ученика: только у квеста. */
+  questLocalDate: z.string().nullable(),
+  plannedCount: z.number().int(),
+  /** Вопросы, на которые есть хотя бы одна попытка. */
+  answeredCount: z.number().int(),
+  firstAttempt: score,
+  /** Итог после повтора: верно с первой попытки или со второй. total — отвеченные вопросы. */
+  afterRepeat: score,
+  becameHard: z.number().int(),
+  mastered: z.number().int(),
+});
+export type ResultSession = z.infer<typeof resultSession>;
+
+const resultAttempt = z.object({ answer: z.string(), correct: z.boolean(), answeredAt: timestamp });
+
+/** Ответ на один вопрос: обе попытки. Пара — из версии карточки, по которой задан вопрос. */
+export const resultAnswer = z.object({
+  questionId: z.number().int(),
+  sessionId: z.number().int(),
+  sessionType: sessionKind,
+  english: z.string(),
+  translation: z.string(),
+  direction: z.enum(["ru_en", "en_ru"]),
+  format: z.enum(["choice", "typed"]),
+  first: resultAttempt,
+  /** Повтор после ошибки; null — повтора не было (верно сразу или повтор ещё впереди). */
+  second: resultAttempt.nullable(),
+  becameHard: z.boolean(),
+  becameMastered: z.boolean(),
+});
+export type ResultAnswer = z.infer<typeof resultAnswer>;
+
+export const resultWord = z.object({
+  studentWordId: z.number().int(),
+  english: z.string(),
+  translation: z.string(),
+  /** Текущее состояние слова у ученика: сложное, освоенное или изучается. */
+  status: wordState,
+  /** Серия «5 из 5». */
+  correctStreak: z.number().int(),
+  /** Подборки текущей связи, где у слова есть действующие карточки. */
+  sources: z.array(z.string()),
+  firstAttempt: score,
+  lastAnsweredAt: timestamp.nullable(),
+});
+export type ResultWord = z.infer<typeof resultWord>;
+
+export const resultCollection = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  status: collectionStatus,
+  publishedAt: timestamp,
+  wordCount: z.number().int(),
+  /** Карточки копии, которые ученик открывал. */
+  viewedCards: z.number().int(),
+  /** Слова копии, на которые есть ответ. */
+  answeredWords: z.number().int(),
+  firstAttempt: score,
+});
+export type ResultCollection = z.infer<typeof resultCollection>;
+
+export const resultView = z.object({
+  english: z.string(),
+  translation: z.string(),
+  collectionTitle: z.string(),
+  views: z.number().int(),
+  lastViewedAt: timestamp,
+});
+export type ResultView = z.infer<typeof resultView>;
+
+export const studentProgress = z.object({
+  /** Слова с действующими карточками в подборках текущей связи. */
+  available: z.number().int(),
+  /** Из доступных: есть ответ в рамках текущей связи. */
+  studied: z.number().int(),
+  hard: z.number().int(),
+  mastered: z.number().int(),
+  completedCollections: z.number().int(),
+  totalCollections: z.number().int(),
+  /** Дней подряд с завершённым квестом (квесты текущей связи). */
+  questStreak: z.number().int(),
+  questsCompleted: z.number().int(),
+  examsCompleted: z.number().int(),
+});
+export type StudentProgress = z.infer<typeof studentProgress>;
+
+export const studentResults = z.object({
+  student: z.object({
+    id: z.number().int(),
+    displayName: z.string(),
+    status: studentStatus,
+    startedAt: timestamp.nullable(),
+    /** Часовой пояс ученика: в нём показаны даты выгрузки. null — не выбран, даты в UTC. */
+    timezone: z.string().nullable(),
+  }),
+  generatedAt: timestamp,
+  progress: studentProgress,
+  totals: z.object({ answered: z.number().int(), firstAttempt: score, afterRepeat: score }),
+  collections: z.array(resultCollection),
+  /** Сначала новые. */
+  sessions: z.array(resultSession),
+  /** Сначала новые. */
+  answers: z.array(resultAnswer),
+  /** Сначала сложные, затем изучаемые, затем освоенные. */
+  words: z.array(resultWord),
+  /** Просмотренные карточки, сначала недавние. */
+  views: z.array(resultView),
+});
+export type StudentResults = z.infer<typeof studentResults>;
+
+/** Результаты по исходной подборке: копии объединяются по исходной подборке и исходной карточке. */
+export const collectionResults = z.object({
+  id: z.number().int(),
+  title: z.string(),
+  recipients: z.array(
+    z.object({
+      studentId: z.number().int(),
+      displayName: z.string(),
+      studentStatus,
+      copyId: z.number().int(),
+      status: collectionStatus,
+      publishedAt: timestamp,
+      firstAttempt: score,
+      afterRepeat: score,
+    }),
+  ),
+  /** Слова с ответами, сначала вызвавшие больше затруднений. */
+  words: z.array(
+    z.object({
+      /** Исходная карточка; null у слов, добавленных прямо в копию. */
+      sourceCardId: z.number().int().nullable(),
+      english: z.string(),
+      translation: z.string(),
+      /** Учеников с ответом на это слово. */
+      students: z.number().int(),
+      firstAttempt: score,
+      /** Сколько раз слово стало сложным. */
+      becameHard: z.number().int(),
+      /** У скольких учеников слово сейчас в «Сложных». */
+      hardNow: z.number().int(),
+    }),
+  ),
+});
+export type CollectionResults = z.infer<typeof collectionResults>;
+
 // ---------- Маршруты ----------
 
 const emptyResponse = z.object({ ok: z.literal(true) });
@@ -401,7 +596,7 @@ const emptyResponse = z.object({ ok: z.literal(true) });
  *   own-copy-card — действующая карточка такой копии.
  * Чужой, удалённый и несуществующий объект неотличимы: 404 not_found. Права проверяются до разбора тела.
  * Для всех изменяющих запросов, кроме public, обязателен CSRF (в том числе для POST-предпросмотров).
- * navigation — переход браузера, а не fetch.
+ * navigation — переход браузера, а не fetch; download — файл для скачивания, а не JSON.
  */
 export const apiRoutes = {
   telegramLoginStart: { method: "GET", path: "/api/auth/telegram/start", access: "public", navigation: true },
@@ -557,6 +752,24 @@ export const apiRoutes = {
     response: copyDetail,
   },
   deleteCopyCard: { method: "DELETE", path: "/api/copy-cards/:id", access: "own-copy-card", response: copyDetail },
+
+  // ---------- Результаты ----------
+
+  /** Результаты ученика в рамках текущей связи. */
+  studentResults: { method: "GET", path: "/api/students/:id/results", access: "own-student", response: studentResults },
+  /**
+   * Те же результаты файлом CSV для Excel: UTF-8 с BOM, разделитель «;», строки CRLF. Значения, которые таблица
+   * приняла бы за формулу (начало с =, +, -, @, табуляции или перевода строки), начинаются с апострофа.
+   * Ответ — файл (Content-Disposition: attachment), а не JSON; ошибки — обычный JSON.
+   */
+  studentResultsCsv: { method: "GET", path: "/api/students/:id/results/csv", access: "own-student", download: true },
+  /** Кто получил, начал и завершил подборку; какие слова вызвали затруднение. Только текущие связи. */
+  collectionResults: {
+    method: "GET",
+    path: "/api/collections/:id/results",
+    access: "own-collection",
+    response: collectionResults,
+  },
 } as const;
 
 export type ApiRoutes = typeof apiRoutes;
